@@ -4,11 +4,10 @@ import { useServices } from '@/app/services-context';
 import type { BookId } from '@/core/library/book';
 import type { OpenedBook } from '@/core/reader/reader-service';
 import { AppHeader } from '@/ui/components/AppHeader';
-import { Banner } from '@/ui/components/Banner';
 import { Button } from '@/ui/components/Button';
 import { EmptyState } from '@/ui/components/EmptyState';
 import { IconButton } from '@/ui/components/IconButton';
-import { BackIcon, BookIcon, ShieldIcon } from '@/ui/components/icons';
+import { BackIcon, BookIcon } from '@/ui/components/icons';
 import { Toast } from '@/ui/components/Toast';
 import { BookFrame } from './BookFrame';
 import type { FrameEvent } from './use-book-frame';
@@ -95,8 +94,8 @@ interface OpenReaderProps {
 }
 
 function OpenReader({ opened, onToast, backButton }: OpenReaderProps) {
-  const { library, platform } = useServices();
-  const [book, setBook] = useState(opened.book);
+  const { platform } = useServices();
+  const { book } = opened;
   const [frameKey, setFrameKey] = useState(0);
   const [leftPage, setLeftPage] = useState(false);
   const savePosition = useReadingPosition(book.id);
@@ -105,14 +104,6 @@ function OpenReader({ opened, onToast, backButton }: OpenReaderProps) {
   const reloadFrame = () => {
     setLeftPage(false);
     setFrameKey((key) => key + 1);
-  };
-
-  const toggleSafeMode = () => {
-    void library.setSafeMode(book.id, !book.safeMode).then((updated) => {
-      if (!updated) return;
-      setBook(updated);
-      reloadFrame();
-    });
   };
 
   const handleFrameEvent = useCallback(
@@ -128,27 +119,7 @@ function OpenReader({ opened, onToast, backButton }: OpenReaderProps) {
 
   return (
     <div className="screen reader">
-      <AppHeader
-        title={book.title}
-        leading={backButton}
-        actions={
-          <IconButton
-            label="Safe mode"
-            showLabel
-            icon={<ShieldIcon size={18} />}
-            aria-pressed={book.safeMode}
-            onClick={toggleSafeMode}
-          />
-        }
-      />
-      {book.safeMode && (
-        <div className="reader__notice">
-          <Banner tone="info">
-            Safe mode is on: this book&apos;s scripts are turned off, so interactive parts
-            won&apos;t work.
-          </Banner>
-        </div>
-      )}
+      <AppHeader title={book.title} leading={backButton} />
       <div className="reader__viewport">
         {leftPage ? (
           <EmptyState
@@ -167,8 +138,7 @@ function OpenReader({ opened, onToast, backButton }: OpenReaderProps) {
             frameUrl={platform.bookFrameUrl}
             html={opened.html}
             storage={opened.storage}
-            safeMode={book.safeMode}
-            initialPosition={opened.book.position}
+            initialPosition={book.position}
             onEvent={handleFrameEvent}
             onPosition={savePosition}
           />

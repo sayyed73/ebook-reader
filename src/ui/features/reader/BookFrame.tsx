@@ -8,7 +8,6 @@ interface BookFrameProps {
   frameUrl: string;
   html: string;
   storage: BookStorageSession;
-  safeMode: boolean;
   initialPosition: ReadingPosition | null;
   onEvent: (event: FrameEvent) => void;
   onPosition: (position: ReadingPosition) => void;

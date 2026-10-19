@@ -2,11 +2,6 @@
   height: 100%;
 }
 
-.reader__notice {
-  padding: var(--space-2) max(var(--space-4), env(safe-area-inset-right)) 0
-    max(var(--space-4), env(safe-area-inset-left));
-}
-
 .reader__viewport {
   display: flex;
   flex: 1;

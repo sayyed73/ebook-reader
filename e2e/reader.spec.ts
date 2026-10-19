@@ -57,26 +57,6 @@ test('a book can reload itself and gets its latest data back', async ({ page }) 
   await expect(page.getByText('This book tried to open another page')).toHaveCount(0);
 });
 
-test('safe mode turns the book scripts off and remembers the choice', async ({ page }) => {
-  await addBook(page, 'interactive-guide.html');
-  const book = bookFrame(page);
-  await expect(book.locator('.mark-btn')).toHaveCount(3);
-
-  await page.getByRole('button', { name: 'Safe mode' }).click();
-  await expect(page.getByText(/Safe mode is on/)).toBeVisible();
-  await expect(book.locator('h1')).toHaveText('Interactive Test Guide');
-  await expect(book.locator('.mark-btn')).toHaveCount(0);
-
-  await page.getByRole('button', { name: 'Back to library' }).click();
-  await expect(page.getByText('Safe mode', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: /^Interactive Test Guide/ }).click();
-  await expect(page.getByRole('button', { name: 'Safe mode' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
-  await expect(book.locator('.mark-btn')).toHaveCount(0);
-});
-
 test('rejects files that are not HTML books', async ({ page }) => {
   const chooser = page.waitForEvent('filechooser');
   await page.getByRole('button', { name: 'Add book' }).click();

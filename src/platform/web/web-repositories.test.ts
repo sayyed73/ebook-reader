@@ -12,7 +12,6 @@ const book: Book = {
   contentHash: 'abc',
   importedAt: 1,
   lastOpenedAt: null,
-  safeMode: false,
   position: null,
 };
 
@@ -29,9 +28,9 @@ describe('IndexedDB repositories', () => {
     const db = openDatabase();
     const repo = new WebBookRepository(db);
     await repo.add(book, '<p>hi</p>');
-    await repo.update({ ...book, safeMode: true });
+    await repo.update({ ...book, lastOpenedAt: 9 });
 
-    expect(await repo.list()).toEqual([{ ...book, safeMode: true }]);
+    expect(await repo.list()).toEqual([{ ...book, lastOpenedAt: 9 }]);
     expect(await repo.getContent('b1')).toBe('<p>hi</p>');
     expect(await repo.get('missing')).toBeNull();
     (await db).close();

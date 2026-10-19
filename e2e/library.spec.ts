@@ -104,7 +104,7 @@ test('replacing a book with a new version keeps its progress', async ({ page }) 
   await expect(page.locator('.book-card')).toHaveCount(1);
 });
 
-test('after an unexpected exit, the open book is offered in safe mode', async ({ page }) => {
+test('after an unexpected exit, the open book can be removed', async ({ page }) => {
   await addBook(page, 'interactive-guide.html');
   await expect(bookFrame(page).locator('.mark-btn')).toHaveCount(3);
   // Simulate a freeze/crash: the page goes away without a normal exit.
@@ -117,9 +117,9 @@ test('after an unexpected exit, the open book is offered in safe mode', async ({
   }, marker);
   await page.reload();
 
-  await page.getByRole('button', { name: 'Open in safe mode' }).click();
-  await expect(page.getByText(/Safe mode is on/)).toBeVisible();
-  await expect(bookFrame(page).locator('.mark-btn')).toHaveCount(0);
+  await expect(page.getByRole('dialog')).toContainText('closed while “Interactive Test Guide”');
+  await page.getByRole('button', { name: 'Remove book' }).click();
+  await expect(page.getByRole('heading', { name: 'Your library is empty' })).toBeVisible();
 });
 
 test('closing the reader normally leaves nothing to recover', async ({ page }) => {

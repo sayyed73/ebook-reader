@@ -121,7 +121,6 @@ try {
       contentHash: id,
       importedAt: Date.now(),
       lastOpenedAt: null,
-      safeMode: false,
       position: null,
     };
     const result = await invoke('library_add', { book, content: html });

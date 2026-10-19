@@ -1,6 +1,6 @@
 import type { Book, BookId } from '@/core/library/book';
 import { IconButton } from '@/ui/components/IconButton';
-import { BookIcon, ShieldIcon, TrashIcon } from '@/ui/components/icons';
+import { BookIcon, TrashIcon } from '@/ui/components/icons';
 import { formatFileSize, formatRelativeTime } from '@/ui/format';
 import './BookList.css';
 
@@ -31,11 +31,6 @@ export function BookList({ books, onOpen, onDelete }: BookListProps) {
               <span className="book-card__meta">
                 {book.fileName} · {formatFileSize(book.sizeBytes)}
               </span>
-              {book.safeMode && (
-                <span className="book-card__badge">
-                  <ShieldIcon size={14} /> Safe mode
-                </span>
-              )}
             </span>
           </button>
           <IconButton

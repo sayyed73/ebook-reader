@@ -8,14 +8,22 @@ import { ConfirmDialog } from '@/ui/components/ConfirmDialog';
 import { EmptyState } from '@/ui/components/EmptyState';
 import { BookIcon, PlusIcon } from '@/ui/components/icons';
 import { BookList } from './BookList';
+import { RecoveryPrompt } from './RecoveryPrompt';
 import { useLibrary } from './use-library';
 import './LibraryScreen.css';
 
 interface LibraryScreenProps {
   onOpenBook: (id: BookId) => void;
+  /** Book that was open when the app last stopped unexpectedly (see RecoveryService). */
+  interruptedBookId?: BookId | null;
+  onRecoveryHandled?: () => void;
 }
 
-export function LibraryScreen({ onOpenBook }: LibraryScreenProps) {
+export function LibraryScreen({
+  onOpenBook,
+  interruptedBookId = null,
+  onRecoveryHandled = () => undefined,
+}: LibraryScreenProps) {
   const { books, busy, error, conflict, importBook, resolveConflict, deleteBook, dismissError } =
     useLibrary();
   const [pendingDelete, setPendingDelete] = useState<Book | null>(null);
@@ -38,6 +46,8 @@ export function LibraryScreen({ onOpenBook }: LibraryScreenProps) {
   );
 
   const hasBooks = books !== null && books.length > 0;
+  // Only books still in the library are offered; a deleted one is silently skipped.
+  const interruptedBook = books?.find((book) => book.id === interruptedBookId) ?? null;
 
   return (
     <div className="screen">
@@ -80,6 +90,21 @@ export function LibraryScreen({ onOpenBook }: LibraryScreenProps) {
           This file looks like a different version of it. Replace the book in your library (your
           progress is kept), or keep both as separate books?
         </ConfirmDialog>
+      )}
+
+      {interruptedBook && !conflict && (
+        <RecoveryPrompt
+          book={interruptedBook}
+          onDismiss={onRecoveryHandled}
+          onOpen={() => {
+            onRecoveryHandled();
+            onOpenBook(interruptedBook.id);
+          }}
+          onRemove={() => {
+            onRecoveryHandled();
+            void deleteBook(interruptedBook.id);
+          }}
+        />
       )}
 
       {pendingDelete && (

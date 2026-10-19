@@ -35,7 +35,7 @@ export interface LibraryServiceDeps {
   readonly newId?: () => BookId;
 }
 
-type BookPatch = Partial<Pick<Book, 'lastOpenedAt' | 'safeMode' | 'position'>>;
+type BookPatch = Partial<Pick<Book, 'lastOpenedAt' | 'position'>>;
 
 /** Library use cases: importing, listing, updating and deleting books. */
 export class LibraryService {
@@ -76,7 +76,6 @@ export class LibraryService {
       contentHash: pending.contentHash,
       importedAt: this.now(),
       lastOpenedAt: null,
-      safeMode: false,
       position: null,
     };
     await this.books.add(book, pending.html);
@@ -84,8 +83,8 @@ export class LibraryService {
   }
 
   /**
-   * Swaps in a new version of an existing book. Its id, saved data (progress), safe-mode choice
-   * and reading position are kept.
+   * Swaps in a new version of an existing book. Its id, saved data (progress) and reading position
+   * are kept.
    */
   replace(id: BookId, pending: PendingImport): Promise<Book | null> {
     return this.serialize(async () => {
@@ -129,10 +128,6 @@ export class LibraryService {
 
   markOpened(id: BookId): Promise<Book | null> {
     return this.patch(id, { lastOpenedAt: this.now() });
-  }
-
-  setSafeMode(id: BookId, safeMode: boolean): Promise<Book | null> {
-    return this.patch(id, { safeMode });
   }
 
   async savePosition(id: BookId, position: ReadingPosition): Promise<void> {

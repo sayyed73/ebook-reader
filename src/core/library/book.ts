@@ -15,14 +15,24 @@ export interface Book {
   readonly contentHash: string;
   readonly importedAt: number;
   readonly lastOpenedAt: number | null;
-  /** When true the book is shown with its scripts disabled. */
-  readonly safeMode: boolean;
   readonly position: ReadingPosition | null;
 }
 
-/** Fills fields added after a book was first stored, so older records stay readable. */
+/**
+ * Normalizes a stored record: fills fields added after it was first stored and drops fields that
+ * no longer exist, so older records stay readable.
+ */
 export function withBookDefaults(stored: Omit<Book, 'position'> & Partial<Book>): Book {
-  return { ...stored, position: stored.position ?? null };
+  return {
+    id: stored.id,
+    title: stored.title,
+    fileName: stored.fileName,
+    sizeBytes: stored.sizeBytes,
+    contentHash: stored.contentHash,
+    importedAt: stored.importedAt,
+    lastOpenedAt: stored.lastOpenedAt,
+    position: stored.position ?? null,
+  };
 }
 
 /** Upper bound for a stored scroll offset; anything larger is treated as invalid. */

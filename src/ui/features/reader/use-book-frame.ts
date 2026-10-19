@@ -11,7 +11,6 @@ export type FrameEvent = 'link-blocked' | 'storage-full' | 'left-page';
 interface UseBookFrameOptions {
   readonly html: string;
   readonly storage: BookStorageSession;
-  readonly safeMode: boolean;
   /** Where to scroll on first load. */
   readonly initialPosition: ReadingPosition | null;
   readonly onEvent: (event: FrameEvent) => void;
@@ -25,7 +24,6 @@ interface UseBookFrameOptions {
 export function useBookFrame({
   html,
   storage,
-  safeMode,
   initialPosition,
   onEvent,
   onPosition,
@@ -85,7 +83,6 @@ export function useBookFrame({
         type: 'load',
         html,
         storage: storage.snapshot(),
-        safeMode,
         position,
       };
       frameWindow.postMessage(toEnvelope(load), '*', [channel.port2]);
@@ -97,7 +94,7 @@ export function useBookFrame({
       clearTimeout(leftPageTimer);
       port?.close();
     };
-  }, [html, storage, safeMode]);
+  }, [html, storage]);
 
   return iframeRef;
 }

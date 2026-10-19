@@ -2,7 +2,6 @@ import { useCallback, useState } from 'react';
 import type { BookId } from '@/core/library/book';
 import { LibraryScreen } from '@/ui/features/library/LibraryScreen';
 import { ReaderScreen } from '@/ui/features/reader/ReaderScreen';
-import { RecoveryPrompt } from '@/ui/features/reader/RecoveryPrompt';
 import { useServices } from './services-context';
 
 type View = { readonly name: 'library' } | { readonly name: 'reader'; readonly bookId: BookId };
@@ -13,10 +12,9 @@ export function App() {
   const [recoveryBookId, setRecoveryBookId] = useState(interruptedBookId);
 
   const openBook = useCallback((bookId: BookId) => {
-    setRecoveryBookId(null);
     setView({ name: 'reader', bookId });
   }, []);
-  const dismissRecovery = useCallback(() => {
+  const clearRecovery = useCallback(() => {
     setRecoveryBookId(null);
   }, []);
 
@@ -31,11 +29,10 @@ export function App() {
     );
   }
   return (
-    <>
-      <LibraryScreen onOpenBook={openBook} />
-      {recoveryBookId && (
-        <RecoveryPrompt bookId={recoveryBookId} onOpen={openBook} onDismiss={dismissRecovery} />
-      )}
-    </>
+    <LibraryScreen
+      onOpenBook={openBook}
+      interruptedBookId={recoveryBookId}
+      onRecoveryHandled={clearRecovery}
+    />
   );
 }

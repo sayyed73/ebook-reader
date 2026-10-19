@@ -77,12 +77,3 @@
   font-size: var(--font-size-sm);
   overflow-wrap: anywhere;
 }
-
-.book-card__badge {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  color: var(--color-accent);
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-}

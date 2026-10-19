@@ -6,14 +6,12 @@
  * this code shares the frame with untrusted scripts and must not be relied on to stay intact.
  * The real security boundaries are the sandbox and CSP, not this file.
  */
-import { SAFE_MODE_CSP } from '@/core/reader/frame-policy';
 import {
   parseLoadBookMessage,
   toEnvelope,
   type FrameMessage,
   type LoadBookMessage,
 } from '@/core/reader/frame-protocol';
-import { cspMetaTag, insertAtDocumentStart } from '@/core/reader/html-injection';
 import { installLinkGuard } from './link-guard';
 import { restoreReadingPosition, trackReadingPosition } from './reading-position';
 import { createStorage } from './storage-shim';
@@ -38,10 +36,6 @@ function loadBook(message: LoadBookMessage, port: MessagePort): void {
     createStorage({}, () => undefined),
   );
 
-  const html = message.safeMode
-    ? insertAtDocumentStart(message.html, cspMetaTag(SAFE_MODE_CSP))
-    : message.html;
-
   document.open();
   // document.open() erases all window listeners, so these are added after it.
   installLinkGuard(window, () => {
@@ -57,7 +51,7 @@ function loadBook(message: LoadBookMessage, port: MessagePort): void {
   // document.write is deliberate: it parses the book as a full document in this frame,
   // keeping its doctype (standards mode) and running its scripts in order.
   // eslint-disable-next-line @typescript-eslint/no-deprecated
-  document.write(html);
+  document.write(message.html);
   document.close();
 }
 

@@ -48,9 +48,14 @@ Numbers in brackets refer to the list above.
    drops any message without the per-launch 128-bit invoke key, which is injected into the main
    frame only, so the book frame can't use it. This is verified by a forged-call test.
 7. **Recovery** [5]: if a book navigates away, the app shows "Reload book" instead of an error
-   page. Safe mode (scripts off, via an extra `script-src 'none'` policy) is a per-book toggle.
+   page.
    If the app froze, crashed or was force-quit while a book was open, the next launch offers to
-   open that book in safe mode (`src/core/reader/recovery.ts`).
+   remove that book or open it anyway (`src/core/reader/recovery.ts`), so a book that freezes
+   the app can't lock the reader out.
+
+   There is deliberately **no "scripts off" mode**: interactive books don't work without their
+   scripts, and none of the protections above depend on scripts being off.
+
 8. **Input limits** [5]: `.html`/`.htm`, max 20 MB, not binary, decoded via BOM/`<meta charset>`.
 
 The frame's link guard (suppressing clicks on external links) is a usability feature, **not** a
@@ -60,7 +65,7 @@ by layer 4 and handled by layer 7.
 ## Known residual risks (documented, not hidden)
 
 - **CPU/memory abuse**: an iframe usually shares the app's renderer process; an infinite loop can
-  freeze the app until it's restarted. Mitigated by safe mode and Phase 4 recovery, not prevented.
+  freeze the app until it's restarted. Mitigated by the recovery prompt (remove the book), not prevented.
 - **WebRTC**: CSP doesn't govern WebRTC, so a malicious script could, in theory, send _its own_
   data (book content, what you typed into that book) to a STUN/TURN server. It still can't read
   other books, the app, or your files. Per-platform WebView mitigations are evaluated in Phase 4.

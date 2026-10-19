@@ -15,8 +15,8 @@ export interface RecoveryStore {
 /**
  * Detects that the app stopped (froze, crashed or was force-quit) while a book was open: the
  * marker is set while reading and cleared whenever the app closes or goes to the background
- * normally. A marker found at startup means the last session didn't end normally, and the
- * book is offered in safe mode.
+ * normally. A marker found at startup means the last session didn't end normally; the user is
+ * then offered to remove that book, so a book that freezes the app can't lock them out.
  */
 export class RecoveryService {
   constructor(

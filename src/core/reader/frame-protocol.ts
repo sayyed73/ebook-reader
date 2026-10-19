@@ -36,7 +36,6 @@ export interface LoadBookMessage {
   readonly type: 'load';
   readonly html: string;
   readonly storage: StorageEntries;
-  readonly safeMode: boolean;
   readonly position: ReadingPosition | null;
 }
 
@@ -88,8 +87,8 @@ export function parseFrameMessage(data: unknown): FrameMessage | null {
 export function parseLoadBookMessage(data: unknown): LoadBookMessage | null {
   const record = readEnvelope(data);
   if (!record || record['type'] !== 'load') return null;
-  const { html, storage, safeMode } = record;
-  if (typeof html !== 'string' || typeof safeMode !== 'boolean') return null;
+  const { html, storage } = record;
+  if (typeof html !== 'string') return null;
   const position = parsePosition(record['position']);
   if (typeof storage !== 'object' || storage === null || Array.isArray(storage)) return null;
 
@@ -97,7 +96,7 @@ export function parseLoadBookMessage(data: unknown): LoadBookMessage | null {
   for (const [key, value] of Object.entries(storage)) {
     if (typeof value === 'string') entries[key] = value;
   }
-  return { type: 'load', html, storage: entries, safeMode, position };
+  return { type: 'load', html, storage: entries, position };
 }
 
 function parsePosition(data: unknown): ReadingPosition | null {

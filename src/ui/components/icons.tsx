@@ -66,14 +66,6 @@ export function BackIcon(props: IconProps) {
   );
 }
 
-export function ShieldIcon(props: IconProps) {
-  return (
-    <StrokeIcon {...props}>
-      <path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3Z" />
-    </StrokeIcon>
-  );
-}
-
 export function CloseIcon(props: IconProps) {
   return (
     <StrokeIcon {...props}>

@@ -30,6 +30,3 @@ export const BOOK_FRAME_CSP = [
   "form-action 'none'",
   "base-uri 'none'",
 ].join('; ');
-
-/** Extra policy written into the book in safe mode. Policies only ever get stricter. */
-export const SAFE_MODE_CSP = "script-src 'none'";

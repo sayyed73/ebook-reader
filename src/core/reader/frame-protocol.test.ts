@@ -45,22 +45,19 @@ describe('parseFrameMessage', () => {
 describe('parseLoadBookMessage', () => {
   it('keeps only string storage values', () => {
     const message = parseLoadBookMessage(
-      toEnvelope({ type: 'load', html: '<p>', storage: { a: '1', b: 2 }, safeMode: false }),
+      toEnvelope({ type: 'load', html: '<p>', storage: { a: '1', b: 2 } }),
     );
     expect(message).toEqual({
       type: 'load',
       html: '<p>',
       storage: { a: '1' },
-      safeMode: false,
       position: null,
     });
   });
 
   it('keeps a valid position and drops an invalid one', () => {
     const load = (position: unknown) =>
-      parseLoadBookMessage(
-        toEnvelope({ type: 'load', html: '', storage: {}, safeMode: false, position }),
-      )?.position;
+      parseLoadBookMessage(toEnvelope({ type: 'load', html: '', storage: {}, position }))?.position;
     expect(load({ scrollY: 300 })).toEqual({ scrollY: 300 });
     expect(load({ scrollY: -3 })).toBeNull();
     expect(load('300')).toBeNull();

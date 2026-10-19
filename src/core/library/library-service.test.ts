@@ -39,7 +39,6 @@ describe('LibraryService.importFile', () => {
       sizeBytes: 29,
       importedAt: 1000,
       lastOpenedAt: null,
-      safeMode: false,
       position: null,
     });
     expect(book?.contentHash).toMatch(/^[0-9a-f]{64}$/);
@@ -92,7 +91,6 @@ describe('resolving conflicts', () => {
   async function withConflict() {
     const ctx = setup();
     await importOk(ctx.service, 'guide.html', '<title>Guide</title><p>v1</p>');
-    await ctx.service.setSafeMode('book-1', true);
     await ctx.service.savePosition('book-1', { scrollY: 420 });
     await ctx.bookStorage.save('book-1', { progress: '3' });
     const outcome = await importOk(ctx.service, 'guide.html', '<title>Guide 2</title><p>v2</p>');
@@ -100,14 +98,13 @@ describe('resolving conflicts', () => {
     return { ...ctx, pending: outcome.pending };
   }
 
-  it('replace swaps the content but keeps id, progress, safe mode and position', async () => {
+  it('replace swaps the content but keeps id, progress and position', async () => {
     const { service, books, bookStorage, pending } = await withConflict();
     const replaced = await service.replace('book-1', pending);
 
     expect(replaced).toMatchObject({
       id: 'book-1',
       title: 'Guide 2',
-      safeMode: true,
       position: { scrollY: 420 },
     });
     expect(books.contents.get('book-1')).toBe('<title>Guide 2</title><p>v2</p>');
@@ -119,7 +116,7 @@ describe('resolving conflicts', () => {
     const { service, books, bookStorage, pending } = await withConflict();
     const added = await service.addAsNew(pending);
 
-    expect(added).toMatchObject({ id: 'book-2', safeMode: false, position: null });
+    expect(added).toMatchObject({ id: 'book-2', position: null });
     expect(books.books.size).toBe(2);
     expect(await bookStorage.load('book-2')).toEqual({});
   });
@@ -138,14 +135,15 @@ describe('LibraryService updates', () => {
   });
 
   it('updates fields independently without overwriting each other', async () => {
-    const { service } = setup();
+    const { service, tick } = setup();
     await importOk(service, 'a.html', '<p>a</p>');
+    tick(5);
     await Promise.all([
-      service.setSafeMode('book-1', true),
+      service.markOpened('book-1'),
       service.savePosition('book-1', { scrollY: 99.6 }),
     ]);
     expect(await service.get('book-1')).toMatchObject({
-      safeMode: true,
+      lastOpenedAt: 1005,
       position: { scrollY: 100 },
     });
   });
@@ -156,6 +154,16 @@ describe('LibraryService updates', () => {
     await service.savePosition('book-1', { scrollY: Number.NaN });
     await service.savePosition('book-1', { scrollY: -5 });
     expect((await service.get('book-1'))?.position).toBeNull();
+  });
+
+  it('drops fields that no longer exist from stored books', async () => {
+    const { service, books } = setup();
+    await importOk(service, 'a.html', '<p>a</p>');
+    const stored = books.books.get('book-1');
+    if (!stored) throw new Error('missing');
+    books.books.set('book-1', { ...stored, safeMode: true } as typeof stored);
+
+    expect(await service.get('book-1')).not.toHaveProperty('safeMode');
   });
 
   it('fills defaults for books stored before positions existed', async () => {

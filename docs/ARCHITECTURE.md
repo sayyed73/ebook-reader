@@ -45,7 +45,7 @@ Library ──open(bookId)──▶ ReaderScreen
   1. ReaderService.open: book metadata + HTML + saved localStorage entries
   2. <iframe sandbox="allow-scripts" src="/frame.html">        (own page, own strict CSP)
   3. frame ──"ready"──▶ app  (window message, sender checked)
-  4. app ──{ html, storage, safeMode } + private MessagePort──▶ frame
+  4. app ──{ html, storage, position } + private MessagePort──▶ frame
   5. bootstrap installs localStorage/sessionStorage stand-ins, then document.write(book)
   6. book writes localStorage → stand-in → port → app validates → BookStorageSession
      → batched save (250 ms, and on close / app hidden)
@@ -73,9 +73,9 @@ capped. The browser build stores the same data in IndexedDB.
 
 - Adding a file identical to a library book (same SHA-256) opens that book.
 - A different file with the same file name or title asks: **Replace** (keeps id, saved data,
-  safe mode, position) or **Keep both**.
+  position) or **Keep both**.
 - Metadata updates are serialized read-modify-write by id, so e.g. a position save and a
-  safe-mode toggle can't overwrite each other.
+  "last opened" update can't overwrite each other.
 - Delete removes metadata, HTML and saved data.
 
 ## Extension points (planned)
