@@ -103,3 +103,29 @@ test('replacing a book with a new version keeps its progress', async ({ page }) 
   await backToLibrary(page);
   await expect(page.locator('.book-card')).toHaveCount(1);
 });
+
+test('after an unexpected exit, the open book is offered in safe mode', async ({ page }) => {
+  await addBook(page, 'interactive-guide.html');
+  await expect(bookFrame(page).locator('.mark-btn')).toHaveCount(3);
+  // Simulate a freeze/crash: the page goes away without a normal exit.
+  const marker = await page.evaluate(() => localStorage.getItem('reader.open-book'));
+  expect(marker).not.toBeNull();
+  await page.goto('about:blank');
+  await page.goto('/');
+  await page.evaluate((value) => {
+    if (value) localStorage.setItem('reader.open-book', value);
+  }, marker);
+  await page.reload();
+
+  await page.getByRole('button', { name: 'Open in safe mode' }).click();
+  await expect(page.getByText(/Safe mode is on/)).toBeVisible();
+  await expect(bookFrame(page).locator('.mark-btn')).toHaveCount(0);
+});
+
+test('closing the reader normally leaves nothing to recover', async ({ page }) => {
+  await addBook(page, 'interactive-guide.html');
+  await backToLibrary(page);
+  await page.reload();
+  await expect(page.locator('.book-card')).toHaveCount(1);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+});

@@ -1,7 +1,21 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Minimal permissions for the main window. Each added permission must be justified in docs/SECURITY.md.",
+  "description": "Main window permissions: core defaults plus the app's own library and picker commands (src-tauri/src). No plugin (fs, dialog) permissions are granted to the UI; those plugins are used from Rust only.",
   "windows": ["main"],
-  "permissions": ["core:default"]
+  "permissions": [
+    "core:default",
+    "allow-library-list",
+    "allow-library-get",
+    "allow-library-get-content",
+    "allow-library-add",
+    "allow-library-update",
+    "allow-library-replace",
+    "allow-library-delete",
+    "allow-book-storage-load",
+    "allow-book-storage-save",
+    "allow-book-storage-delete",
+    "allow-pick-book-file",
+    "allow-read-picked-file"
+  ]
 }

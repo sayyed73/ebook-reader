@@ -27,8 +27,9 @@ check-offs, a daily log and notes). Mobile PDF/ebook apps can't run these; this 
 | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
 | **1. Foundation** ✅  | Project scaffold (Vite + React + TS, Tauri 2 shell), architecture skeleton, lint/format/test, CI, docs. App boots to an empty library.                                                        | cloud     |
 | **2. Reader core** ✅ | Import one `.html` file → sandboxed reader. Storage bridge so books' `localStorage` works and persists. Per-book "safe mode" (scripts off). Hostile test fixtures + automated security tests. | cloud     |
-| **3. Library**        | Library list (import, open, delete, last opened), duplicate/replace handling (keeps progress), resume reading position, error states, light/dark UI.                                          | cloud     |
-| **4. Native**         | Tauri adapters (native picker, app-data storage, isolated book-frame protocol), hang recovery (offer safe mode after a freeze), run security tests on Windows/macOS/iOS, phone testing guide. | **local** |
+| **3. Library** ✅     | Library list (import, open, delete, last opened), duplicate/replace handling (keeps progress), resume reading position, error states, light/dark UI.                                          | cloud     |
+| **4a. Native** ✅     | Tauri adapters (native picker, app-data storage, isolated book-frame protocol), hang recovery (offer safe mode after a freeze), Linux native security check in CI, device testing guide.      | cloud     |
+| **4b. Devices**       | Run on Windows, macOS, iPhone with [TESTING_ON_DEVICES.md](TESTING_ON_DEVICES.md); fix what comes up; standalone iPhone install.                                                              | **local** |
 
 Release 1 is done when the example book works fully (chapters, check-offs, tracker, notes,
 progress survives restart) on Windows, macOS and iPhone, and the security tests pass on each.

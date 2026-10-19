@@ -19,13 +19,14 @@ src/
   frame/       Bootstrap that runs inside the sandboxed book frame (bundled into frame.html)
   platform/    Platform = the ports bundled per runtime.
     web/       Browser adapter: file input, IndexedDB. Used for dev and automated tests.
-    tauri/     Native adapter. Reuses web/ until Phase 4 adds native picker, storage, frame protocol.
+    tauri/     Native adapter: commands for file storage and the native picker, bookframe URL.
   config/      User-facing product identity (the only place the app name lives).
   app/         Composition root: picks the platform, builds services, provides them to the UI.
   ui/          React. components/ = generic building blocks; features/ = library, reader.
   styles/      Design tokens and global CSS.
 vite-plugins/  Builds frame.html (CSP + inlined bootstrap) for dev and production.
-src-tauri/     Rust shell: window, capabilities, (Phase 4) narrow commands and frame protocol.
+src-tauri/     Rust shell: capabilities, library commands (file storage), native picker,
+               bookframe protocol serving the embedded frame page.
 e2e/           Playwright tests, test books and hostile fixtures.
 ```
 
@@ -56,6 +57,17 @@ Library ──open(bookId)──▶ ReaderScreen
 
 Messages are versioned (`frame-protocol.ts`) so frame and app can evolve independently.
 Security rationale for each step: [SECURITY.md](SECURITY.md).
+
+## Native storage (Tauri)
+
+```text
+<app data>/library/books/<id>/meta.json     metadata (schema owned by the TypeScript core)
+                             /content.html  the book
+                             /storage.json  its saved localStorage entries
+```
+
+Ids are validated (`[A-Za-z0-9-]`, max 64), writes are atomic (temp file + rename), sizes are
+capped. The browser build stores the same data in IndexedDB.
 
 ## Library rules
 

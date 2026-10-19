@@ -8,9 +8,9 @@ import { bookFramePage } from './vite-plugins/book-frame-page.ts';
 const host = process.env['TAURI_DEV_HOST'];
 
 /**
- * CSP for the trusted app UI in browser builds. Keep in sync with
- * `app.security.csp` in src-tauri/tauri.conf.json. Not applied in dev because
- * Vite's dev server relies on inline scripts for hot reload.
+ * CSP for the trusted app UI in browser builds. Not applied in dev (Vite's dev server relies on
+ * inline scripts for hot reload) or in Tauri builds, which get `app.security.csp` from
+ * src-tauri/tauri.conf.json instead (a second policy here would block the book frame there).
  */
 const APP_CSP = [
   "default-src 'self'",
@@ -28,7 +28,7 @@ const APP_CSP = [
 function appCspPlugin(): Plugin {
   return {
     name: 'app-csp',
-    apply: 'build',
+    apply: (_config, env) => env.command === 'build' && !process.env['TAURI_ENV_PLATFORM'],
     transformIndexHtml() {
       return [
         {

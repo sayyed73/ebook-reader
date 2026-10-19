@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-library-get-content"
+description = "Enables the library_get_content command without any pre-configured scope."
+commands.allow = ["library_get_content"]
+
+[[permission]]
+identifier = "deny-library-get-content"
+description = "Denies the library_get_content command without any pre-configured scope."
+commands.deny = ["library_get_content"]

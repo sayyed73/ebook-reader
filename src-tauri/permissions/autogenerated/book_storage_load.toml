@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-book-storage-load"
+description = "Enables the book_storage_load command without any pre-configured scope."
+commands.allow = ["book_storage_load"]
+
+[[permission]]
+identifier = "deny-book-storage-load"
+description = "Denies the book_storage_load command without any pre-configured scope."
+commands.deny = ["book_storage_load"]

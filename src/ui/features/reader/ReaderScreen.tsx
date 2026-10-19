@@ -14,6 +14,7 @@ import { BookFrame } from './BookFrame';
 import type { FrameEvent } from './use-book-frame';
 import { useOpenedBook } from './use-opened-book';
 import { useReadingPosition } from './use-reading-position';
+import { useRecoveryMarker } from './use-recovery-marker';
 import './ReaderScreen.css';
 
 const TOAST_MESSAGES = {
@@ -99,6 +100,7 @@ function OpenReader({ opened, onToast, backButton }: OpenReaderProps) {
   const [frameKey, setFrameKey] = useState(0);
   const [leftPage, setLeftPage] = useState(false);
   const savePosition = useReadingPosition(book.id);
+  useRecoveryMarker(book.id);
 
   const reloadFrame = () => {
     setLeftPage(false);

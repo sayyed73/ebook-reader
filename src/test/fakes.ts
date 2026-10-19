@@ -6,6 +6,7 @@ import type {
   PickedFile,
   StorageEntries,
 } from '@/core/library/ports';
+import type { OpenBookMarker, RecoveryStore } from '@/core/reader/recovery';
 import type { Platform } from '@/platform/platform';
 
 export class InMemoryBookRepository implements BookRepository {
@@ -67,6 +68,16 @@ export class StubFilePicker implements FilePicker {
   }
 }
 
+export class InMemoryRecoveryStore implements RecoveryStore {
+  marker: OpenBookMarker | null = null;
+  read() {
+    return this.marker;
+  }
+  write(marker: OpenBookMarker | null) {
+    this.marker = marker;
+  }
+}
+
 export function pickedFile(name: string, content: string | Uint8Array): PickedFile {
   const bytes = typeof content === 'string' ? new TextEncoder().encode(content) : content;
   return { name, sizeBytes: bytes.length, read: () => Promise.resolve(bytes) };
@@ -76,12 +87,15 @@ export function createTestPlatform(): Platform & {
   books: InMemoryBookRepository;
   bookStorage: InMemoryBookStorageRepository;
   filePicker: StubFilePicker;
+  recovery: InMemoryRecoveryStore;
 } {
   return {
     kind: 'web',
     books: new InMemoryBookRepository(),
     bookStorage: new InMemoryBookStorageRepository(),
     filePicker: new StubFilePicker(),
+    recovery: new InMemoryRecoveryStore(),
     bookFrameUrl: '/frame.html',
+    onAppClosing: () => () => undefined,
   };
 }

@@ -1,7 +1,13 @@
 # Security test results
 
-Automated: `npm run test:e2e` (`e2e/security.spec.ts`, fixtures in `e2e/fixtures/hostile/`).
-Every request that would leave the app is intercepted and recorded; any recorded request fails the test.
+- **Browser** (automated, every PR): `npm run test:e2e` (`e2e/security.spec.ts`, fixtures in
+  `e2e/fixtures/hostile/`). Every request that would leave the app is intercepted and recorded;
+  any recorded request fails the test.
+- **Desktop app on Linux** (automated, every PR): `e2e/native/check-tauri-linux.mjs` drives the
+  production Tauri build through WebKitGTK's WebDriver: bookframe origin, no Tauri globals in the
+  frame, hostile probes, forged IPC calls from the frame, path-traversal ids, file storage,
+  navigation containment.
+- **Windows, macOS, iPhone**: manual checklist in [TESTING_ON_DEVICES.md](TESTING_ON_DEVICES.md).
 
 ## Coverage
 

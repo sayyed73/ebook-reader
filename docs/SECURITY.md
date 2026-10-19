@@ -23,7 +23,10 @@ Numbers in brackets refer to the list above.
 2. **Separate frame page** [1, 2]: the book is written into a tiny trusted page (`frame.html`,
    built from `src/frame/`) with its own CSP. It is never put into the app's DOM and never loaded
    as the main window. (A `srcdoc` iframe would inherit the app's CSP, which would either break
-   books or force a weaker app CSP.)
+   books or force a weaker app CSP.) In the native app the page is embedded in the binary and
+   served only by the `bookframe` protocol (`src-tauri/src/book_frame.rs`), on its own origin,
+   with the CSP repeated as a header plus `sandbox allow-scripts`. It is deliberately not served
+   through Tauri's asset protocol, which would inject the app's CSP into it.
 3. **Frame CSP** [3] (`src/core/reader/frame-policy.ts`): `default-src 'none'`; inline/eval
    scripts allowed because books are built from them; styles, images, fonts and media only inline
    or `data:`/`blob:`; `connect-src`, `frame-src`, `worker-src`, `form-action`, `base-uri` all
@@ -36,11 +39,18 @@ Numbers in brackets refer to the list above.
    shape and size, applied to that book only. Per-book quota: 5 MB, enforced in the frame _and_
    the app. (Window messages can't be used: after a page unloads their sender is `null` and can't be
    verified, which would drop a book's last save before it reloads itself.)
-6. **No native bridge** [2]: no Tauri APIs are exposed to book content; app capabilities are
-   minimal; there is no generic "read any file" command. Verified per platform in Phase 4.
+6. **No native bridge** [2]: no Tauri APIs are exposed to book content. The app's own commands
+   (`src-tauri/src/library`, `picker.rs`) take no file paths: the library addresses books by
+   validated ids inside its own data folder, and picking a file happens in the native dialog and
+   is read in Rust. Every command needs an explicit permission in `capabilities/`; no plugin
+   (fs, dialog) permissions are granted to the UI at all.
+   On WebKit (macOS, iOS, Linux) the native IPC message handler is visible to subframes too; Tauri
+   drops any message without the per-launch 128-bit invoke key, which is injected into the main
+   frame only, so the book frame can't use it. This is verified by a forged-call test.
 7. **Recovery** [5]: if a book navigates away, the app shows "Reload book" instead of an error
    page. Safe mode (scripts off, via an extra `script-src 'none'` policy) is a per-book toggle.
-   Phase 4 adds: if the app froze or crashed while a book was open, offer safe mode on next launch.
+   If the app froze, crashed or was force-quit while a book was open, the next launch offers to
+   open that book in safe mode (`src/core/reader/recovery.ts`).
 8. **Input limits** [5]: `.html`/`.htm`, max 20 MB, not binary, decoded via BOM/`<meta charset>`.
 
 The frame's link guard (suppressing clicks on external links) is a usability feature, **not** a
@@ -56,6 +66,8 @@ by layer 4 and handled by layer 7.
   other books, the app, or your files. Per-platform WebView mitigations are evaluated in Phase 4.
 - **DNS prefetch** hints may leak a hostname lookup on some engines.
 - **WebView engine bugs** are outside our control; keep OS/WebView updated.
+- **IPC handler exposure on WebKit**: as above, protection relies on the secrecy of Tauri's invoke
+  key, which never leaves the main frame.
 - **Compatibility trade-offs** (by design): remote fonts/images don't load; `alert`/`confirm`/
   `prompt`, cookies, IndexedDB, downloads and popups don't work inside books; `sessionStorage`
   works but isn't saved.

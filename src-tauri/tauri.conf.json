@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "identifier": "app.readora.reader",
   "build": {
-    "beforeDevCommand": "npm run dev",
+    "beforeDevCommand": "npm run dev:tauri",
     "devUrl": "http://localhost:5173",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"
@@ -28,7 +28,7 @@
         "img-src": "'self' data: blob:",
         "font-src": "'self'",
         "connect-src": "ipc: http://ipc.localhost",
-        "frame-src": "'self'",
+        "frame-src": "bookframe: http://bookframe.localhost https://bookframe.localhost",
         "object-src": "'none'",
         "base-uri": "'none'",
         "form-action": "'none'"
