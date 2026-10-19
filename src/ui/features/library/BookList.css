@@ -10,21 +10,39 @@
 .book-card {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-4);
-  width: 100%;
-  padding: var(--space-4);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
   transition: border-color 0.15s;
 }
 
 .book-card:hover {
   border-color: var(--color-text-muted);
+}
+
+.book-card__open {
+  display: flex;
+  flex: 1;
+  align-items: flex-start;
+  gap: var(--space-4);
+  min-width: 0;
+  padding: var(--space-4);
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.book-card__delete {
+  margin: var(--space-2);
+  color: var(--color-text-muted);
+}
+
+.book-card__delete:hover {
+  color: var(--color-danger);
 }
 
 .book-card__cover {

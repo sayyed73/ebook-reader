@@ -12,26 +12,33 @@ export interface OpenedBook {
 
 export type OpenBookError = { readonly kind: 'not-found' };
 
+export interface OpenBookOptions {
+  /** Called when the book's saved data couldn't be written. */
+  readonly onSaveError?: (error: unknown) => void;
+}
+
 /** Reader use cases: opening a book with its saved data. */
 export class ReaderService {
   constructor(
     private readonly library: LibraryService,
     private readonly bookStorage: BookStorageRepository,
-    private readonly onSaveError: (error: unknown) => void = () => undefined,
   ) {}
 
-  async open(id: BookId): Promise<Result<OpenedBook, OpenBookError>> {
-    const [book, html, entries] = await Promise.all([
-      this.library.get(id),
+  async open(
+    id: BookId,
+    options: OpenBookOptions = {},
+  ): Promise<Result<OpenedBook, OpenBookError>> {
+    const [html, entries] = await Promise.all([
       this.library.getContent(id),
       this.bookStorage.load(id),
     ]);
-    if (!book || html === null) return err({ kind: 'not-found' });
+    if (html === null) return err({ kind: 'not-found' });
+    const book = await this.library.markOpened(id);
+    if (!book) return err({ kind: 'not-found' });
 
-    const opened = await this.library.markOpened(book);
     const storage = new BookStorageSession(id, entries, this.bookStorage, {
-      onSaveError: this.onSaveError,
+      ...(options.onSaveError ? { onSaveError: options.onSaveError } : {}),
     });
-    return ok({ book: opened, html, storage });
+    return ok({ book, html, storage });
   }
 }

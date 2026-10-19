@@ -10,10 +10,7 @@ export interface AppServices {
 }
 
 export function createServices(platform: Platform): AppServices {
-  const library = new LibraryService({ books: platform.books });
-  const reader = new ReaderService(library, platform.bookStorage, (error) => {
-    // Never log book contents; the error itself carries no book data.
-    console.error('Saving book data failed', error);
-  });
+  const library = new LibraryService({ books: platform.books, bookStorage: platform.bookStorage });
+  const reader = new ReaderService(library, platform.bookStorage);
   return { platform, library, reader };
 }

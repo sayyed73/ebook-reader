@@ -4,9 +4,10 @@ A free, private reader for **interactive HTML books**: single `.html` files with
 toggles and saved progress, which normal PDF/ebook apps on phones can't open properly.
 Runs on Windows, macOS and iPhone (Android/Linux later). No account, no network, no tracking.
 
-> Status: **Release 1, Phase 2 (reader core) done.** Add an `.html` book and read it with its
-> scripts running in a sandbox; its saved progress persists. Library polish comes in Phase 3,
-> native file storage in Phase 4. See [docs/PLAN.md](docs/PLAN.md).
+> Status: **Release 1, Phase 3 (library) done.** Add `.html` books and read them with their
+> scripts running in a sandbox; progress and reading position persist. Re-adding a book offers
+> to replace it (keeping progress); books can be deleted. Phase 4 brings the native apps.
+> See [docs/PLAN.md](docs/PLAN.md).
 
 ## Docs
 

@@ -30,6 +30,16 @@ export class InMemoryBookRepository implements BookRepository {
     this.books.set(book.id, book);
     return Promise.resolve();
   }
+  replace(book: Book, content: string) {
+    this.books.set(book.id, book);
+    this.contents.set(book.id, content);
+    return Promise.resolve();
+  }
+  delete(id: BookId) {
+    this.books.delete(id);
+    this.contents.delete(id);
+    return Promise.resolve();
+  }
 }
 
 export class InMemoryBookStorageRepository implements BookStorageRepository {
@@ -42,6 +52,10 @@ export class InMemoryBookStorageRepository implements BookStorageRepository {
   save(id: BookId, entries: StorageEntries) {
     this.saveCount += 1;
     this.saved.set(id, { ...entries });
+    return Promise.resolve();
+  }
+  delete(id: BookId) {
+    this.saved.delete(id);
     return Promise.resolve();
   }
 }

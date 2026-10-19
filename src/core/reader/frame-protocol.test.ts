@@ -9,6 +9,10 @@ describe('parseFrameMessage', () => {
       key: 'k',
       value: 'v',
     });
+    expect(parseFrameMessage(toEnvelope({ type: 'position', scrollY: 120 }))).toEqual({
+      type: 'position',
+      scrollY: 120,
+    });
   });
 
   it.each([
@@ -20,6 +24,9 @@ describe('parseFrameMessage', () => {
     ['unknown type', toEnvelope({ type: 'run-command' })],
     ['non-string value', toEnvelope({ type: 'storage-set', key: 'k', value: 1 })],
     ['missing key', toEnvelope({ type: 'storage-remove' })],
+    ['negative position', toEnvelope({ type: 'position', scrollY: -1 })],
+    ['non-finite position', toEnvelope({ type: 'position', scrollY: Infinity })],
+    ['string position', toEnvelope({ type: 'position', scrollY: '10' })],
     [
       'an oversized entry',
       toEnvelope({ type: 'storage-set', key: 'k', value: 'x'.repeat(STORAGE_QUOTA_BYTES) }),
@@ -40,7 +47,23 @@ describe('parseLoadBookMessage', () => {
     const message = parseLoadBookMessage(
       toEnvelope({ type: 'load', html: '<p>', storage: { a: '1', b: 2 }, safeMode: false }),
     );
-    expect(message).toEqual({ type: 'load', html: '<p>', storage: { a: '1' }, safeMode: false });
+    expect(message).toEqual({
+      type: 'load',
+      html: '<p>',
+      storage: { a: '1' },
+      safeMode: false,
+      position: null,
+    });
+  });
+
+  it('keeps a valid position and drops an invalid one', () => {
+    const load = (position: unknown) =>
+      parseLoadBookMessage(
+        toEnvelope({ type: 'load', html: '', storage: {}, safeMode: false, position }),
+      )?.position;
+    expect(load({ scrollY: 300 })).toEqual({ scrollY: 300 });
+    expect(load({ scrollY: -3 })).toBeNull();
+    expect(load('300')).toBeNull();
   });
 
   it('rejects malformed load messages', () => {

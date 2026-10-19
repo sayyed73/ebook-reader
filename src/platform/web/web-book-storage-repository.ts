@@ -19,4 +19,10 @@ export class WebBookStorageRepository implements BookStorageRepository {
       tx.objectStore(STORES.storage).put(entries, id);
     });
   }
+
+  async delete(id: BookId): Promise<void> {
+    await transact(await this.db, STORES.storage, 'readwrite', (tx) => {
+      tx.objectStore(STORES.storage).delete(id);
+    });
+  }
 }

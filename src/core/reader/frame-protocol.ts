@@ -1,3 +1,4 @@
+import { isValidPosition, type ReadingPosition } from '../library/book';
 import type { StorageEntries } from '../library/ports';
 import { STORAGE_QUOTA_BYTES, entryBytes } from './storage-quota';
 
@@ -26,6 +27,8 @@ export type FrameMessage =
   | { readonly type: 'unloading' }
   /** A link to another page was clicked and suppressed. */
   | { readonly type: 'navigation-blocked' }
+  /** The reader scrolled (throttled). */
+  | { readonly type: 'position'; readonly scrollY: number }
   | StorageMessage;
 
 /** Host → frame, with the private MessagePort transferred alongside. */
@@ -34,6 +37,7 @@ export interface LoadBookMessage {
   readonly html: string;
   readonly storage: StorageEntries;
   readonly safeMode: boolean;
+  readonly position: ReadingPosition | null;
 }
 
 type Envelope<T> = T & { readonly channel: typeof FRAME_CHANNEL; readonly version: number };
@@ -67,6 +71,11 @@ export function parseFrameMessage(data: unknown): FrameMessage | null {
       if (typeof key !== 'string' || typeof value !== 'string') return null;
       if (entryBytes(key, value) > STORAGE_QUOTA_BYTES) return null;
       return { type: 'storage-set', key, value };
+    case 'position': {
+      const { scrollY } = record;
+      if (typeof scrollY !== 'number' || !isValidPosition({ scrollY })) return null;
+      return { type: 'position', scrollY };
+    }
     case 'storage-remove':
       if (typeof key !== 'string' || entryBytes(key, '') > STORAGE_QUOTA_BYTES) return null;
       return { type: 'storage-remove', key };
@@ -81,11 +90,18 @@ export function parseLoadBookMessage(data: unknown): LoadBookMessage | null {
   if (!record || record['type'] !== 'load') return null;
   const { html, storage, safeMode } = record;
   if (typeof html !== 'string' || typeof safeMode !== 'boolean') return null;
+  const position = parsePosition(record['position']);
   if (typeof storage !== 'object' || storage === null || Array.isArray(storage)) return null;
 
   const entries: Record<string, string> = {};
   for (const [key, value] of Object.entries(storage)) {
     if (typeof value === 'string') entries[key] = value;
   }
-  return { type: 'load', html, storage: entries, safeMode };
+  return { type: 'load', html, storage: entries, safeMode, position };
+}
+
+function parsePosition(data: unknown): ReadingPosition | null {
+  if (typeof data !== 'object' || data === null) return null;
+  const { scrollY } = data as Record<string, unknown>;
+  return typeof scrollY === 'number' && isValidPosition({ scrollY }) ? { scrollY } : null;
 }

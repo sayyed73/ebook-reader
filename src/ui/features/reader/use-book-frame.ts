@@ -1,4 +1,5 @@
 import { useEffect, useRef, type RefObject } from 'react';
+import type { ReadingPosition } from '@/core/library/book';
 import type { BookStorageSession } from '@/core/reader/book-storage-session';
 import { parseFrameMessage, toEnvelope, type LoadBookMessage } from '@/core/reader/frame-protocol';
 
@@ -11,7 +12,10 @@ interface UseBookFrameOptions {
   readonly html: string;
   readonly storage: BookStorageSession;
   readonly safeMode: boolean;
+  /** Where to scroll on first load. */
+  readonly initialPosition: ReadingPosition | null;
   readonly onEvent: (event: FrameEvent) => void;
+  readonly onPosition: (position: ReadingPosition) => void;
 }
 
 /**
@@ -22,17 +26,22 @@ export function useBookFrame({
   html,
   storage,
   safeMode,
+  initialPosition,
   onEvent,
+  onPosition,
 }: UseBookFrameOptions): RefObject<HTMLIFrameElement | null> {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const onEventRef = useRef(onEvent);
+  const callbacks = useRef({ onEvent, onPosition });
+  const initialPositionRef = useRef(initialPosition);
 
   useEffect(() => {
-    onEventRef.current = onEvent;
-  }, [onEvent]);
+    callbacks.current = { onEvent, onPosition };
+  }, [onEvent, onPosition]);
 
   useEffect(() => {
     let port: MessagePort | null = null;
+    // Latest known position, so a book that reloads itself comes back to the same place.
+    let position = initialPositionRef.current;
     let leftPageTimer: ReturnType<typeof setTimeout> | undefined;
 
     const handlePortMessage = (event: MessageEvent) => {
@@ -45,14 +54,18 @@ export function useBookFrame({
           void storage.flush();
           clearTimeout(leftPageTimer);
           leftPageTimer = setTimeout(() => {
-            onEventRef.current('left-page');
+            callbacks.current.onEvent('left-page');
           }, RELOAD_GRACE_MS);
           return;
         case 'navigation-blocked':
-          onEventRef.current('link-blocked');
+          callbacks.current.onEvent('link-blocked');
+          return;
+        case 'position':
+          position = { scrollY: message.scrollY };
+          callbacks.current.onPosition(position);
           return;
         default:
-          if (!storage.apply(message)) onEventRef.current('storage-full');
+          if (!storage.apply(message)) callbacks.current.onEvent('storage-full');
       }
     };
 
@@ -68,7 +81,13 @@ export function useBookFrame({
       const channel = new MessageChannel();
       port = channel.port1;
       port.onmessage = handlePortMessage;
-      const load: LoadBookMessage = { type: 'load', html, storage: storage.snapshot(), safeMode };
+      const load: LoadBookMessage = {
+        type: 'load',
+        html,
+        storage: storage.snapshot(),
+        safeMode,
+        position,
+      };
       frameWindow.postMessage(toEnvelope(load), '*', [channel.port2]);
     };
 

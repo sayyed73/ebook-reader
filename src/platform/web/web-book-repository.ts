@@ -32,6 +32,20 @@ export class WebBookRepository implements BookRepository {
     });
   }
 
+  async replace(book: Book, content: string): Promise<void> {
+    await transact(await this.db, [STORES.books, STORES.contents], 'readwrite', (tx) => {
+      tx.objectStore(STORES.books).put(book);
+      tx.objectStore(STORES.contents).put(content, book.id);
+    });
+  }
+
+  async delete(id: BookId): Promise<void> {
+    await transact(await this.db, [STORES.books, STORES.contents], 'readwrite', (tx) => {
+      tx.objectStore(STORES.books).delete(id);
+      tx.objectStore(STORES.contents).delete(id);
+    });
+  }
+
   async update(book: Book): Promise<void> {
     await transact(await this.db, STORES.books, 'readwrite', (tx) => {
       tx.objectStore(STORES.books).put(book);

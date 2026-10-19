@@ -20,9 +20,14 @@ export interface BookRepository {
   list(): Promise<Book[]>;
   get(id: BookId): Promise<Book | null>;
   getContent(id: BookId): Promise<string | null>;
-  /** Adds a new book together with its HTML. */
+  /** Adds a new book together with its HTML. Fails if the id exists. */
   add(book: Book, content: string): Promise<void>;
+  /** Updates metadata only. */
   update(book: Book): Promise<void>;
+  /** Updates metadata and HTML of an existing book together. */
+  replace(book: Book, content: string): Promise<void>;
+  /** Removes metadata and HTML. */
+  delete(id: BookId): Promise<void>;
 }
 
 /** A book's saved `localStorage` entries. */
@@ -31,4 +36,5 @@ export type StorageEntries = Readonly<Record<string, string>>;
 export interface BookStorageRepository {
   load(id: BookId): Promise<StorageEntries>;
   save(id: BookId, entries: StorageEntries): Promise<void>;
+  delete(id: BookId): Promise<void>;
 }

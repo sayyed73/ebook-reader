@@ -13,6 +13,7 @@ const book: Book = {
   importedAt: 1,
   lastOpenedAt: null,
   safeMode: false,
+  position: null,
 };
 
 describe('IndexedDB repositories', () => {
@@ -45,6 +46,20 @@ describe('IndexedDB repositories', () => {
     (await db).close();
   });
 
+  it('replaces and deletes books together with their content', async () => {
+    const db = openDatabase();
+    const repo = new WebBookRepository(db);
+    await repo.add(book, 'v1');
+    await repo.replace({ ...book, title: 'Guide 2' }, 'v2');
+    expect(await repo.get('b1')).toMatchObject({ title: 'Guide 2' });
+    expect(await repo.getContent('b1')).toBe('v2');
+
+    await repo.delete('b1');
+    expect(await repo.list()).toEqual([]);
+    expect(await repo.getContent('b1')).toBeNull();
+    (await db).close();
+  });
+
   it('saves and loads per-book storage', async () => {
     const db = openDatabase();
     const repo = new WebBookStorageRepository(db);
@@ -52,6 +67,8 @@ describe('IndexedDB repositories', () => {
     await repo.save('b1', { done: 'yes' });
     expect(await repo.load('b1')).toEqual({ done: 'yes' });
     expect(await repo.load('b2')).toEqual({});
+    await repo.delete('b1');
+    expect(await repo.load('b1')).toEqual({});
     (await db).close();
   });
 });

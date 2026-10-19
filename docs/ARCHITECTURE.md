@@ -48,12 +48,23 @@ Library ──open(bookId)──▶ ReaderScreen
   5. bootstrap installs localStorage/sessionStorage stand-ins, then document.write(book)
   6. book writes localStorage → stand-in → port → app validates → BookStorageSession
      → batched save (250 ms, and on close / app hidden)
-  7. book reloads itself → new "ready" → app resends book with latest data and a new port
+  7. reader scrolls → throttled "position" → LibraryService.savePosition (batched);
+     the saved position is sent with the next load and restored after the book's load event
+  8. book reloads itself → new "ready" → app resends book with latest data and a new port
      book navigates away → "unloading" with no "ready" after 2 s → "Reload book" screen
 ```
 
 Messages are versioned (`frame-protocol.ts`) so frame and app can evolve independently.
 Security rationale for each step: [SECURITY.md](SECURITY.md).
+
+## Library rules
+
+- Adding a file identical to a library book (same SHA-256) opens that book.
+- A different file with the same file name or title asks: **Replace** (keeps id, saved data,
+  safe mode, position) or **Keep both**.
+- Metadata updates are serialized read-modify-write by id, so e.g. a position save and a
+  safe-mode toggle can't overwrite each other.
+- Delete removes metadata, HTML and saved data.
 
 ## Extension points (planned)
 

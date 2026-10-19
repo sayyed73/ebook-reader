@@ -1,4 +1,4 @@
-.library {
+.screen__content.library {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);

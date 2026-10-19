@@ -13,7 +13,16 @@ import { Toast } from '@/ui/components/Toast';
 import { BookFrame } from './BookFrame';
 import type { FrameEvent } from './use-book-frame';
 import { useOpenedBook } from './use-opened-book';
+import { useReadingPosition } from './use-reading-position';
 import './ReaderScreen.css';
+
+const TOAST_MESSAGES = {
+  'link-blocked': 'Links to other pages are turned off in books.',
+  'storage-full': "This book's storage is full, so the latest change wasn't saved.",
+  'save-failed': "Your progress couldn't be saved on this device.",
+} as const;
+
+type ToastKind = keyof typeof TOAST_MESSAGES;
 
 interface ReaderScreenProps {
   bookId: BookId;
@@ -21,11 +30,36 @@ interface ReaderScreenProps {
 }
 
 export function ReaderScreen({ bookId, onClose }: ReaderScreenProps) {
-  const state = useOpenedBook(bookId);
+  const [toast, setToast] = useState<{ id: number; kind: ToastKind } | null>(null);
+  const showToast = useCallback((kind: ToastKind) => {
+    setToast({ id: Date.now(), kind });
+  }, []);
+  const clearToast = useCallback(() => {
+    setToast(null);
+  }, []);
+  const state = useOpenedBook(
+    bookId,
+    useCallback(() => {
+      showToast('save-failed');
+    }, [showToast]),
+  );
   const backButton = <IconButton label="Back to library" icon={<BackIcon />} onClick={onClose} />;
+  const toastView = toast && (
+    <Toast key={toast.id} message={TOAST_MESSAGES[toast.kind]} onDone={clearToast} />
+  );
 
   if (state.status === 'open') {
-    return <OpenReader key={bookId} opened={state.opened} backButton={backButton} />;
+    return (
+      <>
+        <OpenReader
+          key={bookId}
+          opened={state.opened}
+          onToast={showToast}
+          backButton={backButton}
+        />
+        {toastView}
+      </>
+    );
   }
 
   return (
@@ -53,22 +87,18 @@ export function ReaderScreen({ bookId, onClose }: ReaderScreenProps) {
   );
 }
 
-const TOAST_MESSAGES: Record<Exclude<FrameEvent, 'left-page'>, string> = {
-  'link-blocked': 'Links to other pages are turned off in books.',
-  'storage-full': "This book's storage is full, so the latest change wasn't saved.",
-};
-
 interface OpenReaderProps {
   opened: OpenedBook;
+  onToast: (kind: ToastKind) => void;
   backButton: React.ReactNode;
 }
 
-function OpenReader({ opened, backButton }: OpenReaderProps) {
+function OpenReader({ opened, onToast, backButton }: OpenReaderProps) {
   const { library, platform } = useServices();
   const [book, setBook] = useState(opened.book);
   const [frameKey, setFrameKey] = useState(0);
   const [leftPage, setLeftPage] = useState(false);
-  const [toast, setToast] = useState<{ id: number; message: string } | null>(null);
+  const savePosition = useReadingPosition(book.id);
 
   const reloadFrame = () => {
     setLeftPage(false);
@@ -76,23 +106,23 @@ function OpenReader({ opened, backButton }: OpenReaderProps) {
   };
 
   const toggleSafeMode = () => {
-    void library.setSafeMode(book, !book.safeMode).then((updated) => {
+    void library.setSafeMode(book.id, !book.safeMode).then((updated) => {
+      if (!updated) return;
       setBook(updated);
       reloadFrame();
     });
   };
 
-  const handleFrameEvent = useCallback((event: FrameEvent) => {
-    if (event === 'left-page') {
-      setLeftPage(true);
-      return;
-    }
-    setToast({ id: Date.now(), message: TOAST_MESSAGES[event] });
-  }, []);
-
-  const clearToast = useCallback(() => {
-    setToast(null);
-  }, []);
+  const handleFrameEvent = useCallback(
+    (event: FrameEvent) => {
+      if (event === 'left-page') {
+        setLeftPage(true);
+        return;
+      }
+      onToast(event);
+    },
+    [onToast],
+  );
 
   return (
     <div className="screen reader">
@@ -136,11 +166,12 @@ function OpenReader({ opened, backButton }: OpenReaderProps) {
             html={opened.html}
             storage={opened.storage}
             safeMode={book.safeMode}
+            initialPosition={opened.book.position}
             onEvent={handleFrameEvent}
+            onPosition={savePosition}
           />
         )}
       </div>
-      {toast && <Toast key={toast.id} message={toast.message} onDone={clearToast} />}
     </div>
   );
 }

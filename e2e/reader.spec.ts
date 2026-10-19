@@ -22,7 +22,7 @@ test('an interactive book runs and keeps its progress across app restarts', asyn
   // Restart the app and reopen the book.
   await page.getByRole('button', { name: 'Back to library' }).click();
   await page.reload();
-  await page.getByRole('button', { name: /Interactive Test Guide/ }).click();
+  await page.getByRole('button', { name: /^Interactive Test Guide/ }).click();
 
   await expect(book.locator('.mark-btn[data-id="2"]')).toHaveText('Completed');
   await expect(book.locator('.mark-btn[data-id="1"]')).toHaveText('Mark complete');
@@ -69,7 +69,7 @@ test('safe mode turns the book scripts off and remembers the choice', async ({ p
 
   await page.getByRole('button', { name: 'Back to library' }).click();
   await expect(page.getByText('Safe mode', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: /Interactive Test Guide/ }).click();
+  await page.getByRole('button', { name: /^Interactive Test Guide/ }).click();
   await expect(page.getByRole('button', { name: 'Safe mode' })).toHaveAttribute(
     'aria-pressed',
     'true',

@@ -15,6 +15,7 @@ import {
 } from '@/core/reader/frame-protocol';
 import { cspMetaTag, insertAtDocumentStart } from '@/core/reader/html-injection';
 import { installLinkGuard } from './link-guard';
+import { restoreReadingPosition, trackReadingPosition } from './reading-position';
 import { createStorage } from './storage-shim';
 
 function announceReady(): void {
@@ -46,9 +47,13 @@ function loadBook(message: LoadBookMessage, port: MessagePort): void {
   installLinkGuard(window, () => {
     postToHost({ type: 'navigation-blocked' });
   });
+  trackReadingPosition(window, ({ scrollY }) => {
+    postToHost({ type: 'position', scrollY });
+  });
   window.addEventListener('pagehide', () => {
     postToHost({ type: 'unloading' });
   });
+  restoreReadingPosition(window, message.position);
   // document.write is deliberate: it parses the book as a full document in this frame,
   // keeping its doctype (standards mode) and running its scripts in order.
   // eslint-disable-next-line @typescript-eslint/no-deprecated

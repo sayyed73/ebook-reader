@@ -37,3 +37,12 @@
 .button--secondary:not(:disabled):hover {
   border-color: var(--color-text-muted);
 }
+
+.button--danger {
+  background: var(--color-danger);
+  color: var(--color-on-accent);
+}
+
+.button--danger:not(:disabled):hover {
+  filter: brightness(0.92);
+}
