@@ -1,0 +1,32 @@
+[package]
+name = "html-book-reader"
+version = "0.1.0"
+description = "Local reader for interactive HTML books"
+edition = "2021"
+rust-version = "1.80"
+publish = false
+
+[lib]
+# `_lib` suffix avoids a name clash with the binary on Windows (cargo issue #8519).
+name = "html_book_reader_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

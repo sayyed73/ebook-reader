@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-library-update"
+description = "Enables the library_update command without any pre-configured scope."
+commands.allow = ["library_update"]
+
+[[permission]]
+identifier = "deny-library-update"
+description = "Denies the library_update command without any pre-configured scope."
+commands.deny = ["library_update"]
