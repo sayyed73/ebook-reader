@@ -1,5 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { addBook, bookFrame, trackExternalRequests } from './helpers';
+import {
+  addBook,
+  bookFrame,
+  collectPageErrors,
+  readSavedBookStorage,
+  trackExternalRequests,
+} from './helpers';
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
@@ -7,6 +13,7 @@ test.beforeEach(async ({ page }) => {
 
 test('an interactive book runs and keeps its progress across app restarts', async ({ page }) => {
   const external = await trackExternalRequests(page);
+  const errors = collectPageErrors(page);
   await addBook(page, 'interactive-guide.html');
   const book = bookFrame(page);
 
@@ -19,8 +26,17 @@ test('an interactive book runs and keeps its progress across app restarts', asyn
   await book.getByRole('button', { name: 'Notes' }).click();
   await book.locator('#note').fill('Bed by 11');
 
-  // Restart the app and reopen the book.
+  // Leaving the reader saves the book's data; wait until it is really stored before restarting,
+  // so a failure tells "not saved" apart from "not restored".
   await page.getByRole('button', { name: 'Back to library' }).click();
+  await expect(page.getByRole('list', { name: 'Books' })).toBeVisible();
+  await expect
+    .poll(() => readSavedBookStorage(page), {
+      message: `book data saved (errors: ${errors.join(' | ')})`,
+    })
+    .toEqual([{ guide_completed: '{"2":true}', guide_note: 'Bed by 11' }]);
+
+  // Restart the app and reopen the book.
   await page.reload();
   await page.getByRole('button', { name: /^Interactive Test Guide/ }).click();
 
@@ -31,6 +47,7 @@ test('an interactive book runs and keeps its progress across app restarts', asyn
 
   // The remote font in the book is blocked, never fetched.
   expect(external).toEqual([]);
+  expect(errors).toEqual([]);
 });
 
 test('in-page links work and links to other pages are suppressed', async ({ page }) => {
