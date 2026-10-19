@@ -38,3 +38,16 @@ button {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* Full-height screen layout shared by all top-level screens. */
+.screen {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.screen__content {
+  flex: 1;
+  padding: 0 max(var(--space-4), env(safe-area-inset-right)) env(safe-area-inset-bottom)
+    max(var(--space-4), env(safe-area-inset-left));
+}

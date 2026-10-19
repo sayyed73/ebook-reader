@@ -2,7 +2,8 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from '@/app/App';
 import { createPlatform } from '@/app/create-platform';
-import { PlatformProvider } from '@/app/platform-context';
+import { createServices } from '@/app/services';
+import { ServicesProvider } from '@/app/services-context';
 import '@/styles/tokens.css';
 import '@/styles/global.css';
 
@@ -13,8 +14,8 @@ if (!rootElement) {
 
 createRoot(rootElement).render(
   <StrictMode>
-    <PlatformProvider platform={createPlatform()}>
+    <ServicesProvider services={createServices(createPlatform())}>
       <App />
-    </PlatformProvider>
+    </ServicesProvider>
   </StrictMode>,
 );

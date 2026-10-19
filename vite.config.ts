@@ -2,6 +2,7 @@ import { fileURLToPath, URL } from 'node:url';
 import react from '@vitejs/plugin-react';
 import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
+import { bookFramePage } from './vite-plugins/book-frame-page.ts';
 
 // Tauri runs the dev server on a fixed port and expects it to fail rather than move.
 const host = process.env['TAURI_DEV_HOST'];
@@ -41,7 +42,7 @@ function appCspPlugin(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), appCspPlugin()],
+  plugins: [react(), appCspPlugin(), bookFramePage()],
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },

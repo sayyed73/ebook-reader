@@ -14,6 +14,8 @@
   --color-accent-hover: #244a40;
   --color-on-accent: #ffffff;
   --color-focus: #4f8f7c;
+  --color-danger: #a8402e;
+  --color-hover: rgb(0 0 0 / 0.05);
 
   --space-1: 4px;
   --space-2: 8px;
@@ -48,6 +50,8 @@
     --color-accent-hover: #97cfbb;
     --color-on-accent: #10201b;
     --color-focus: #9fd8c4;
+    --color-danger: #f08f7a;
+    --color-hover: rgb(255 255 255 / 0.06);
     --shadow-sm: none;
   }
 }

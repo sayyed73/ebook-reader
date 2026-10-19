@@ -4,14 +4,16 @@ A free, private reader for **interactive HTML books**: single `.html` files with
 toggles and saved progress, which normal PDF/ebook apps on phones can't open properly.
 Runs on Windows, macOS and iPhone (Android/Linux later). No account, no network, no tracking.
 
-> Status: **Release 1, Phase 1 (foundation)**. The app starts to an empty library; adding and
-> reading books arrives in Phase 2. See [docs/PLAN.md](docs/PLAN.md).
+> Status: **Release 1, Phase 2 (reader core) done.** Add an `.html` book and read it with its
+> scripts running in a sandbox; its saved progress persists. Library polish comes in Phase 3,
+> native file storage in Phase 4. See [docs/PLAN.md](docs/PLAN.md).
 
 ## Docs
 
 - [Plan](docs/PLAN.md): releases, phases, scope
 - [Architecture](docs/ARCHITECTURE.md): layers, data flow, extension points
 - [Security](docs/SECURITY.md): how untrusted books are isolated
+- [Security test results](docs/SECURITY_TESTS.md)
 
 ## Run it
 
@@ -40,12 +42,16 @@ npm run tauri build    # produces an installer in src-tauri/target/release/bundl
 
 The first `tauri dev` compiles the Rust side and takes a few minutes; later runs are fast.
 
+> Until Phase 4, books run with scripts only in `tauri dev`. In a `tauri build` installer the
+> book frame needs the native frame protocol that Phase 4 adds.
+
 iPhone instructions come in Phase 4.
 
 ## Checks
 
 ```sh
 npm run check      # typecheck + lint + format check + unit tests
+npm run test:e2e   # browser + security tests (first time: npx playwright install chromium)
 npm run build      # production web build
 cd src-tauri && cargo clippy && cargo test
 ```

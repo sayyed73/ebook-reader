@@ -8,44 +8,51 @@
 
 ## Layers
 
-Dependencies point **inward only**: `ui → app → core ← platform`.
+Dependencies point **inward only**: `ui → app → core ← platform`, and `frame → core`.
+ESLint enforces these boundaries (`eslint.config.js`).
 
 ```text
 src/
-  core/        Pure TypeScript domain logic. No React, no DOM globals, no Tauri.
-               Book model, library use cases, book document builder, bridge protocol.
-  platform/    The Platform interface (ports the app needs) + one adapter per runtime.
-    platform.ts  Platform: grows FilePicker, BookRepository, BookDataRepository, ... per phase
-    web/       Browser adapter (file input, IndexedDB). Used for dev and automated tests.
-    tauri/     Native adapter (Phase 4): dialog plugin, app-data storage, frame protocol.
+  core/        Pure TypeScript domain logic and the ports (interfaces) it needs.
+    library/   Book model, file validation, LibraryService, ports.ts (FilePicker, repositories)
+    reader/    Frame security policy, frame protocol, BookStorageSession, ReaderService
+  frame/       Bootstrap that runs inside the sandboxed book frame (bundled into frame.html)
+  platform/    Platform = the ports bundled per runtime.
+    web/       Browser adapter: file input, IndexedDB. Used for dev and automated tests.
+    tauri/     Native adapter. Reuses web/ until Phase 4 adds native picker, storage, frame protocol.
   config/      User-facing product identity (the only place the app name lives).
-  app/         Composition root: picks the platform adapter, wires services, provides them to UI.
-  ui/          React. components/ = generic building blocks; features/ = screens (library, reader).
+  app/         Composition root: picks the platform, builds services, provides them to the UI.
+  ui/          React. components/ = generic building blocks; features/ = library, reader.
   styles/      Design tokens and global CSS.
-src-tauri/     Rust shell: window, capabilities, narrow commands, frame protocol.
+vite-plugins/  Builds frame.html (CSP + inlined bootstrap) for dev and production.
+src-tauri/     Rust shell: window, capabilities, (Phase 4) narrow commands and frame protocol.
+e2e/           Playwright tests, test books and hostile fixtures.
 ```
 
 Rules:
 
 - `core` is framework-free and unit-tested; it's where new features' logic goes first.
-- UI talks to services, never to `localStorage`/IndexedDB/Tauri directly.
+- UI talks to services, never to IndexedDB/Tauri directly.
 - Each platform difference lives behind a port. Adding a platform = adding an adapter.
-- Errors cross boundaries as typed values (`Result`), not thrown strings.
+- Expected failures cross boundaries as typed values (`Result`), not thrown strings.
 - No brand names in identifiers or CSS classes (`main-container`, not `readora-container`).
 
-## Opening a book (Release 1)
+## Opening a book
 
 ```text
 Library ──open(bookId)──▶ ReaderScreen
-  1. BookRepository.getContent(bookId)            → book HTML (stored at import)
-  2. BookDataRepository.load(bookId)              → saved localStorage entries
-  3. <iframe sandbox="allow-scripts" src=frameUrl> (separate origin, strict CSP)
-  4. frame → app: "ready";  app → frame: { html, storage seed, safeMode }
-  5. frame bootstrap installs the localStorage shim, then writes the book into its document
-  6. book writes localStorage → shim → postMessage → app validates → BookDataRepository.save
+  1. ReaderService.open: book metadata + HTML + saved localStorage entries
+  2. <iframe sandbox="allow-scripts" src="/frame.html">        (own page, own strict CSP)
+  3. frame ──"ready"──▶ app  (window message, sender checked)
+  4. app ──{ html, storage, safeMode } + private MessagePort──▶ frame
+  5. bootstrap installs localStorage/sessionStorage stand-ins, then document.write(book)
+  6. book writes localStorage → stand-in → port → app validates → BookStorageSession
+     → batched save (250 ms, and on close / app hidden)
+  7. book reloads itself → new "ready" → app resends book with latest data and a new port
+     book navigates away → "unloading" with no "ready" after 2 s → "Reload book" screen
 ```
 
-The bootstrap and protocol are versioned so the frame and app can evolve independently.
+Messages are versioned (`frame-protocol.ts`) so frame and app can evolve independently.
 Security rationale for each step: [SECURITY.md](SECURITY.md).
 
 ## Extension points (planned)

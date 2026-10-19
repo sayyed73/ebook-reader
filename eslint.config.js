@@ -4,7 +4,16 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist', 'coverage', 'src-tauri/target', 'src-tauri/gen'] },
+  {
+    ignores: [
+      'dist',
+      'coverage',
+      'test-results',
+      'playwright-report',
+      'src-tauri/target',
+      'src-tauri/gen',
+    ],
+  },
   {
     files: ['**/*.{ts,tsx}'],
     extends: [js.configs.recommended, ...tseslint.configs.strictTypeChecked],
@@ -32,6 +41,27 @@ export default tseslint.config(
             {
               group: ['@/ui/*', '@/app/*', '@/platform/*'],
               message: 'core must not import outer layers.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  // Code that runs inside the untrusted book frame: only pure core logic may be bundled into it.
+  {
+    files: ['src/frame/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['react', 'react-dom', 'react/*', '@tauri-apps/*'],
+              message: 'frame code must stay minimal.',
+            },
+            {
+              group: ['@/ui/*', '@/app/*', '@/platform/*', '@/config/*'],
+              message: 'frame code may only use core.',
             },
           ],
         },

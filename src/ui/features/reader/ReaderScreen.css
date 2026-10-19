@@ -1,0 +1,23 @@
+.reader {
+  height: 100%;
+}
+
+.reader__notice {
+  padding: var(--space-2) max(var(--space-4), env(safe-area-inset-right)) 0
+    max(var(--space-4), env(safe-area-inset-left));
+}
+
+.reader__viewport {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.book-frame {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  /* Books assume a white page unless they style their own background. */
+  background: #fff;
+}

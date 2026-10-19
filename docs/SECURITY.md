@@ -15,32 +15,53 @@ What a book **can** do: run its own scripts, render its own UI, and read/write *
 
 ## Defenses (layered)
 
-| #   | Layer                                                                                                                                                                                                                                                                                                          | Blocks                                                   |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| 1   | **Sandboxed iframe**: `sandbox="allow-scripts"` only. Never `allow-same-origin`, `allow-forms`, `allow-popups`, `allow-top-navigation`, `allow-downloads`, `allow-modals`. The book runs with an _opaque origin_.                                                                                              | 1, 4 (popups, top navigation, forms, downloads, dialogs) |
-| 2   | **Separate frame origin**: the book is loaded into a tiny trusted bootstrap page (`frame.html`) served from its own origin with its own strict CSP, never into the app's DOM and never as the main window URL.                                                                                                 | 1, 2                                                     |
-| 3   | **Frame CSP**: `default-src 'none'`; inline/eval scripts allowed (books need them); styles, images, fonts and media only from inline / `data:` / `blob:`; `connect-src`, `frame-src`, `worker-src`, `form-action`, `base-uri` all `'none'`.                                                                    | 3                                                        |
-| 4   | **App CSP**: strict policy for the trusted UI, and `frame-src` limited to the frame origin, so the book's frame can't be navigated to a website.                                                                                                                                                               | 1, 4                                                     |
-| 5   | **Narrow storage bridge**: the only channel from book to app is `postMessage` with a tiny, versioned schema (`storage set/remove/clear`, `scroll position`). The app accepts messages only from the current book's frame window, validates shape and sizes, and binds them to that book. Per-book quota: 5 MB. | 1                                                        |
-| 6   | **No native bridge in the frame**: no Tauri APIs are exposed to book content; app capabilities are minimal and there is no generic "read any file" command.                                                                                                                                                    | 2                                                        |
-| 7   | **Recovery**: the app records "book opening"; if the app froze or crashed, next launch offers to reopen that book in **safe mode** (scripts off). Safe mode is also a per-book toggle.                                                                                                                         | 5                                                        |
-| 8   | **Input limits**: max book size (initially 20 MB), validated type/encoding.                                                                                                                                                                                                                                    | 5                                                        |
+Numbers in brackets refer to the list above.
+
+1. **Sandboxed iframe** [1, 4]: `sandbox="allow-scripts"` only. Never `allow-same-origin`,
+   `allow-forms`, `allow-popups`, `allow-top-navigation`, `allow-downloads` or `allow-modals`.
+   The book runs with an _opaque origin_: no access to the app, its storage, cookies or IndexedDB.
+2. **Separate frame page** [1, 2]: the book is written into a tiny trusted page (`frame.html`,
+   built from `src/frame/`) with its own CSP. It is never put into the app's DOM and never loaded
+   as the main window. (A `srcdoc` iframe would inherit the app's CSP, which would either break
+   books or force a weaker app CSP.)
+3. **Frame CSP** [3] (`src/core/reader/frame-policy.ts`): `default-src 'none'`; inline/eval
+   scripts allowed because books are built from them; styles, images, fonts and media only inline
+   or `data:`/`blob:`; `connect-src`, `frame-src`, `worker-src`, `form-action`, `base-uri` all
+   `'none'`. A book's own CSP or `<base>` can only make things stricter.
+4. **App CSP** [1, 4]: strict policy for the trusted UI, with `frame-src` limited to the app/frame
+   origin, so the book's frame can't be navigated to a website.
+5. **Narrow bridge** [1] (`src/core/reader/frame-protocol.ts`): on start the frame says `ready`; the
+   app answers with the book and a private `MessagePort`. After that the only messages accepted are
+   `storage set/remove/clear`, "link blocked" and "page unloading", over that port, validated for
+   shape and size, applied to that book only. Per-book quota: 5 MB, enforced in the frame _and_
+   the app. (Window messages can't be used: after a page unloads their sender is `null` and can't be
+   verified, which would drop a book's last save before it reloads itself.)
+6. **No native bridge** [2]: no Tauri APIs are exposed to book content; app capabilities are
+   minimal; there is no generic "read any file" command. Verified per platform in Phase 4.
+7. **Recovery** [5]: if a book navigates away, the app shows "Reload book" instead of an error
+   page. Safe mode (scripts off, via an extra `script-src 'none'` policy) is a per-book toggle.
+   Phase 4 adds: if the app froze or crashed while a book was open, offer safe mode on next launch.
+8. **Input limits** [5]: `.html`/`.htm`, max 20 MB, not binary, decoded via BOM/`<meta charset>`.
+
+The frame's link guard (suppressing clicks on external links) is a usability feature, **not** a
+security boundary: links it can't see (e.g. a detached `<a>` clicked by script) are still stopped
+by layer 4 and handled by layer 7.
 
 ## Known residual risks (documented, not hidden)
 
 - **CPU/memory abuse**: an iframe usually shares the app's renderer process; an infinite loop can
-  freeze the app until it's restarted. Mitigated by layer 7, not prevented.
+  freeze the app until it's restarted. Mitigated by safe mode and Phase 4 recovery, not prevented.
 - **WebRTC**: CSP doesn't govern WebRTC, so a malicious script could, in theory, send _its own_
   data (book content, what you typed into that book) to a STUN/TURN server. It still can't read
   other books, the app, or your files. Per-platform WebView mitigations are evaluated in Phase 4.
 - **DNS prefetch** hints may leak a hostname lookup on some engines.
 - **WebView engine bugs** are outside our control; keep OS/WebView updated.
-- Remote fonts/images in books don't load (by design), so some books look slightly different.
+- **Compatibility trade-offs** (by design): remote fonts/images don't load; `alert`/`confirm`/
+  `prompt`, cookies, IndexedDB, downloads and popups don't work inside books; `sessionStorage`
+  works but isn't saved.
 
-## Test fixtures (Phase 2, automated where possible)
+## Tests
 
-Each fixture is a small HTML book that _attempts_ an attack and reports the outcome:
-parent/app access · storage/cookies/IndexedDB · Tauri globals · fetch/XHR/beacon/WebSocket/EventSource ·
-remote img/css/script/font/iframe · navigation (links, `location`, meta refresh, forms, `window.open`) ·
-downloads · weaker injected CSP / `<base>` · storage quota overflow · forged bridge messages.
-Results are recorded per platform in `docs/SECURITY_TESTS.md` (Phase 2 for browser, Phase 4 for native).
+Hostile books in `e2e/fixtures/hostile/` attempt each attack; `e2e/security.spec.ts` runs them
+and fails if anything leaks or any request leaves the app. Results per platform:
+[SECURITY_TESTS.md](SECURITY_TESTS.md).
