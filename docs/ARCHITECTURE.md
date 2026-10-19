@@ -48,7 +48,8 @@ Library ──open(bookId)──▶ ReaderScreen
   4. app ──{ html, storage, position } + private MessagePort──▶ frame
   5. bootstrap installs localStorage/sessionStorage stand-ins, then document.write(book)
   6. book writes localStorage → stand-in → port → app validates → BookStorageSession
-     → batched save (250 ms, and on close / app hidden)
+     → batched save (250 ms, when the app is hidden, and on leaving the reader,
+       which waits until the data is stored)
   7. reader scrolls → throttled "position" → LibraryService.savePosition (batched);
      the saved position is sent with the next load and restored after the book's load event
   8. book reloads itself → new "ready" → app resends book with latest data and a new port

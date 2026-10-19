@@ -26,15 +26,13 @@ test('an interactive book runs and keeps its progress across app restarts', asyn
   await book.getByRole('button', { name: 'Notes' }).click();
   await book.locator('#note').fill('Bed by 11');
 
-  // Leaving the reader saves the book's data; wait until it is really stored before restarting,
-  // so a failure tells "not saved" apart from "not restored".
+  // Leaving the reader waits for the book's data to be stored, so once the library is shown
+  // the data must already be in the database.
   await page.getByRole('button', { name: 'Back to library' }).click();
   await expect(page.getByRole('list', { name: 'Books' })).toBeVisible();
-  await expect
-    .poll(() => readSavedBookStorage(page), {
-      message: `book data saved (errors: ${errors.join(' | ')})`,
-    })
-    .toEqual([{ guide_completed: '{"2":true}', guide_note: 'Bed by 11' }]);
+  expect(await readSavedBookStorage(page), `errors: ${errors.join(' | ')}`).toEqual([
+    { guide_completed: '{"2":true}', guide_note: 'Bed by 11' },
+  ]);
 
   // Restart the app and reopen the book.
   await page.reload();

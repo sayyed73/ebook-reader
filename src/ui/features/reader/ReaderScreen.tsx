@@ -1,4 +1,3 @@
-import type React from 'react';
 import { useCallback, useState } from 'react';
 import { useServices } from '@/app/services-context';
 import type { BookId } from '@/core/library/book';
@@ -23,6 +22,9 @@ const TOAST_MESSAGES = {
 } as const;
 
 type ToastKind = keyof typeof TOAST_MESSAGES;
+
+/** Longest time leaving a book waits for its data to be saved. */
+const LEAVE_WAIT_LIMIT_MS = 3000;
 
 interface ReaderScreenProps {
   bookId: BookId;
@@ -51,12 +53,7 @@ export function ReaderScreen({ bookId, onClose }: ReaderScreenProps) {
   if (state.status === 'open') {
     return (
       <>
-        <OpenReader
-          key={bookId}
-          opened={state.opened}
-          onToast={showToast}
-          backButton={backButton}
-        />
+        <OpenReader key={bookId} opened={state.opened} onToast={showToast} onClose={onClose} />
         {toastView}
       </>
     );
@@ -90,16 +87,27 @@ export function ReaderScreen({ bookId, onClose }: ReaderScreenProps) {
 interface OpenReaderProps {
   opened: OpenedBook;
   onToast: (kind: ToastKind) => void;
-  backButton: React.ReactNode;
+  onClose: () => void;
 }
 
-function OpenReader({ opened, onToast, backButton }: OpenReaderProps) {
+function OpenReader({ opened, onToast, onClose }: OpenReaderProps) {
   const { platform } = useServices();
   const { book } = opened;
   const [frameKey, setFrameKey] = useState(0);
   const [leftPage, setLeftPage] = useState(false);
-  const savePosition = useReadingPosition(book.id);
+  const position = useReadingPosition(book.id);
+  const [closing, setClosing] = useState(false);
   useRecoveryMarker(book.id);
+
+  // Leaving waits until the book's data and reading position are stored, so closing or
+  // reloading the app right after leaving can't lose the latest changes. The wait is capped so
+  // a stuck save can never trap the reader in the book (the save itself carries on).
+  const close = () => {
+    setClosing(true);
+    const saved = Promise.all([opened.storage.flush(), position.flush()]);
+    const limit = new Promise((resolve) => setTimeout(resolve, LEAVE_WAIT_LIMIT_MS));
+    void Promise.race([saved, limit]).finally(onClose);
+  };
 
   const reloadFrame = () => {
     setLeftPage(false);
@@ -119,7 +127,17 @@ function OpenReader({ opened, onToast, backButton }: OpenReaderProps) {
 
   return (
     <div className="screen reader">
-      <AppHeader title={book.title} leading={backButton} />
+      <AppHeader
+        title={book.title}
+        leading={
+          <IconButton
+            label="Back to library"
+            icon={<BackIcon />}
+            onClick={close}
+            disabled={closing}
+          />
+        }
+      />
       <div className="reader__viewport">
         {leftPage ? (
           <EmptyState
@@ -140,7 +158,7 @@ function OpenReader({ opened, onToast, backButton }: OpenReaderProps) {
             storage={opened.storage}
             initialPosition={book.position}
             onEvent={handleFrameEvent}
-            onPosition={savePosition}
+            onPosition={position.save}
           />
         )}
       </div>

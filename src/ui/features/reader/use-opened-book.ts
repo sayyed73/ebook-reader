@@ -51,7 +51,7 @@ export function useOpenedBook(bookId: BookId, onSaveError: () => void): OpenedBo
  * Runs `flush` when the app goes to the background (mobile may then kill it without warning),
  * when the page is closed, and when the component unmounts.
  */
-export function useFlushOnExit(flush: (() => void) | null): void {
+export function useFlushOnExit(flush: (() => unknown) | null): void {
   useEffect(() => {
     if (!flush) return;
     const flushIfHidden = () => {
