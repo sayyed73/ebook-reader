@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Minimal permissions for the main window. Each added permission must be justified in docs/SECURITY.md.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}
