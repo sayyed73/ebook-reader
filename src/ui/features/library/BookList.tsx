@@ -35,7 +35,7 @@ export function BookList({ books, onOpen, onDelete }: BookListProps) {
           </button>
           <IconButton
             className="book-card__delete"
-            label={`Delete ${book.title}`}
+            label={`Remove ${book.title}`}
             icon={<TrashIcon size={18} />}
             onClick={() => {
               onDelete(book);

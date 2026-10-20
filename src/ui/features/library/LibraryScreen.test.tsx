@@ -54,9 +54,9 @@ describe('LibraryScreen', () => {
     platform.filePicker.next = pickedFile('guide.html', '<title>Sleep Guide</title>');
     await userEvent.click(await screen.findByRole('button', { name: 'Add book' }));
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Delete Sleep Guide' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Remove Sleep Guide' }));
     expect(await screen.findByRole('dialog')).toHaveTextContent('will be removed from this device');
-    await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Remove' }));
 
     expect(
       await screen.findByRole('heading', { name: 'Your library is empty' }),
@@ -69,7 +69,7 @@ describe('LibraryScreen', () => {
     platform.filePicker.next = pickedFile('guide.html', '<title>Sleep Guide</title>');
     await userEvent.click(await screen.findByRole('button', { name: 'Add book' }));
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Delete Sleep Guide' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Remove Sleep Guide' }));
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();

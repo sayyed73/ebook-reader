@@ -58,8 +58,8 @@ test('deleting a book removes it and its saved progress', async ({ page }) => {
   await expect(bookFrame(page).locator('.mark-btn[data-id="1"]')).toHaveText('Completed');
   await backToLibrary(page);
 
-  await page.getByRole('button', { name: 'Delete Interactive Test Guide' }).click();
-  await page.getByRole('dialog').getByRole('button', { name: 'Delete' }).click();
+  await page.getByRole('button', { name: 'Remove Interactive Test Guide' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Remove' }).click();
   await expect(page.getByRole('heading', { name: 'Your library is empty' })).toBeVisible();
 
   await addBook(page, 'interactive-guide.html');

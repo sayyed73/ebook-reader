@@ -120,7 +120,7 @@ export function useLibrary(): LibraryState {
       await run(async () => {
         await library.delete(id);
         await refresh();
-      }, "The book couldn't be deleted. Please try again.");
+      }, "The book couldn't be removed. Please try again.");
     },
     [run, library, refresh],
   );

@@ -109,13 +109,13 @@ export function LibraryScreen({
 
       {pendingDelete && (
         <ConfirmDialog
-          title={`Delete “${pendingDelete.title}”?`}
+          title={`Remove “${pendingDelete.title}”?`}
           onCancel={() => {
             setPendingDelete(null);
           }}
           actions={[
             {
-              label: 'Delete',
+              label: 'Remove',
               variant: 'danger',
               onSelect: () => {
                 const { id } = pendingDelete;
