@@ -23,6 +23,8 @@ pub struct PickedFileInfo {
     token: u64,
     name: String,
     size_bytes: usize,
+    /// Stable identifier of where the file lives, used to recognise the same file later.
+    location: Option<String>,
 }
 
 #[tauri::command]
@@ -40,6 +42,7 @@ pub async fn pick_book_file<R: Runtime>(
         return Ok(None);
     };
     let name = file_name(&path);
+    let location = stable_location(&path);
     let bytes = app
         .fs()
         .read(path)
@@ -62,6 +65,7 @@ pub async fn pick_book_file<R: Runtime>(
         token,
         name,
         size_bytes,
+        location,
     }))
 }
 
@@ -82,6 +86,18 @@ pub async fn read_picked_file(
             Err("no such picked file".into())
         }
     }
+}
+
+/// Desktop paths and Android document URIs identify a file across picks. On iOS the picker hands
+/// over a temporary copy at a new path each time, so there is no stable location to report.
+fn stable_location(path: &FilePath) -> Option<String> {
+    if cfg!(target_os = "ios") {
+        return None;
+    }
+    Some(match path {
+        FilePath::Path(path) => path.to_string_lossy().into_owned(),
+        FilePath::Url(url) => url.to_string(),
+    })
 }
 
 fn file_name(path: &FilePath) -> String {
@@ -140,6 +156,20 @@ mod tests {
             "msf:12"
         );
         assert_eq!(file_name(&url("content://downloads/")), FALLBACK_NAME);
+    }
+
+    #[test]
+    fn locations_identify_the_file() {
+        let path = FilePath::Path(PathBuf::from("/home/u/Downloads/guide.html"));
+        assert_eq!(
+            stable_location(&path).as_deref(),
+            Some("/home/u/Downloads/guide.html")
+        );
+        let uri = FilePath::Url("content://downloads/document/msf%3A12".parse().unwrap());
+        assert_eq!(
+            stable_location(&uri).as_deref(),
+            Some("content://downloads/document/msf%3A12")
+        );
     }
 
     #[test]

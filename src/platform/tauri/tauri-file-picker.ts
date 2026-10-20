@@ -5,6 +5,7 @@ interface PickedFileInfo {
   readonly token: number;
   readonly name: string;
   readonly sizeBytes: number;
+  readonly location: string | null;
 }
 
 /** The system file dialog, opened and read natively (src-tauri/src/picker.rs). */
@@ -15,6 +16,7 @@ export class TauriFilePicker implements FilePicker {
     return {
       name: info.name,
       sizeBytes: info.sizeBytes,
+      location: info.location ?? undefined,
       read: async () =>
         new Uint8Array(await invoke<ArrayBuffer>('read_picked_file', { token: info.token })),
     };

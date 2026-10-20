@@ -18,13 +18,16 @@ export interface PendingImport {
   readonly fileName: string;
   readonly sizeBytes: number;
   readonly contentHash: string;
+  readonly location: string | null;
   readonly html: string;
 }
 
 export type ImportOutcome =
   | { readonly kind: 'added'; readonly book: Book }
-  /** The exact same file is already in the library. */
+  /** This file is already in the library: open it where the reader left off. */
   | { readonly kind: 'already-in-library'; readonly book: Book }
+  /** The file at a known location changed: the book now has the new content, progress kept. */
+  | { readonly kind: 'updated'; readonly book: Book }
   /** A different version of a book with the same name or title exists: ask the user. */
   | { readonly kind: 'conflict'; readonly existing: Book; readonly pending: PendingImport };
 
@@ -35,7 +38,7 @@ export interface LibraryServiceDeps {
   readonly newId?: () => BookId;
 }
 
-type BookPatch = Partial<Pick<Book, 'lastOpenedAt' | 'position'>>;
+type BookPatch = Partial<Pick<Book, 'lastOpenedAt' | 'position' | 'sourceLocation'>>;
 
 /** Library use cases: importing, listing, updating and deleting books. */
 export class LibraryService {
@@ -53,18 +56,60 @@ export class LibraryService {
     this.newId = deps.newId ?? (() => crypto.randomUUID());
   }
 
+  /**
+   * Adds a picked file. A book's identity follows the file, like a PDF reader:
+   * - With a known location, the same location is the same book (updated in place if its
+   *   content changed) and any other location is a new book, even for an identical copy.
+   * - Without one (browser, iOS), identical content is the same book and a different file with
+   *   the same name or title is a conflict the user resolves.
+   */
   async importFile(file: PickedFile): Promise<Result<ImportOutcome, ImportError>> {
-    const pending = await this.prepareImport(file);
-    if (!pending.ok) return pending;
-
+    const prepared = await this.prepareImport(file);
+    if (!prepared.ok) return prepared;
+    const pending = prepared.value;
     const books = await this.list();
-    const identical = books.find((b) => b.contentHash === pending.value.contentHash);
-    if (identical) return ok({ kind: 'already-in-library', book: identical });
+    return ok(
+      pending.location === null
+        ? await this.importByContent(pending, books)
+        : await this.importByLocation(pending, pending.location, books),
+    );
+  }
 
-    const sameName = books.find((b) => isSameBookName(b, pending.value));
-    if (sameName) return ok({ kind: 'conflict', existing: sameName, pending: pending.value });
+  private async importByLocation(
+    pending: PendingImport,
+    location: string,
+    books: Book[],
+  ): Promise<ImportOutcome> {
+    const sameFile = books.find((b) => b.sourceLocation === location);
+    if (sameFile) {
+      if (sameFile.contentHash === pending.contentHash) {
+        return { kind: 'already-in-library', book: sameFile };
+      }
+      const updated = await this.replace(sameFile.id, pending);
+      return updated
+        ? { kind: 'updated', book: updated }
+        : { kind: 'added', book: await this.addAsNew(pending) };
+    }
+    // Books added before locations were recorded: link an identical one to this location
+    // instead of creating a duplicate.
+    const legacy = books.find(
+      (b) => b.sourceLocation === null && b.contentHash === pending.contentHash,
+    );
+    if (legacy) {
+      const linked = await this.patch(legacy.id, { sourceLocation: location });
+      if (linked) return { kind: 'already-in-library', book: linked };
+    }
+    return { kind: 'added', book: await this.addAsNew(pending) };
+  }
 
-    return ok({ kind: 'added', book: await this.addAsNew(pending.value) });
+  private async importByContent(pending: PendingImport, books: Book[]): Promise<ImportOutcome> {
+    const identical = books.find((b) => b.contentHash === pending.contentHash);
+    if (identical) return { kind: 'already-in-library', book: identical };
+
+    const sameName = books.find((b) => isSameBookName(b, pending));
+    if (sameName) return { kind: 'conflict', existing: sameName, pending };
+
+    return { kind: 'added', book: await this.addAsNew(pending) };
   }
 
   async addAsNew(pending: PendingImport): Promise<Book> {
@@ -77,6 +122,7 @@ export class LibraryService {
       importedAt: this.now(),
       lastOpenedAt: null,
       position: null,
+      sourceLocation: pending.location,
     };
     await this.books.add(book, pending.html);
     return book;
@@ -96,6 +142,7 @@ export class LibraryService {
         fileName: pending.fileName,
         sizeBytes: pending.sizeBytes,
         contentHash: pending.contentHash,
+        sourceLocation: pending.location ?? existing.sourceLocation,
       };
       await this.books.replace(book, pending.html);
       return book;
@@ -174,6 +221,7 @@ export class LibraryService {
       fileName: file.name,
       sizeBytes: bytes.length,
       contentHash: await sha256Hex(bytes),
+      location: file.location ?? null,
       html: decoded.value,
     });
   }

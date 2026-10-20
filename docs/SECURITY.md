@@ -43,7 +43,9 @@ Numbers in brackets refer to the list above.
    (`src-tauri/src/library`, `picker.rs`) take no file paths: the library addresses books by
    validated ids inside its own data folder, and picking a file happens in the native dialog and
    is read in Rust. Every command needs an explicit permission in `capabilities/`; no plugin
-   (fs, dialog) permissions are granted to the UI at all.
+   (fs, dialog) permissions are granted to the UI at all. The only extra core permission is
+   `core:window:allow-destroy`, so the app can finish saving the open book before its window
+   closes.
    On WebKit (macOS, iOS, Linux) the native IPC message handler is visible to subframes too; Tauri
    drops any message without the per-launch 128-bit invoke key, which is injected into the main
    frame only, so the book frame can't use it. This is verified by a forged-call test.

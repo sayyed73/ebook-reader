@@ -85,6 +85,9 @@ export function useLibrary(): LibraryState {
           case 'added':
             await refresh();
             return outcome.book.id;
+          case 'updated':
+            await refresh();
+            return outcome.book.id;
           case 'already-in-library':
             return outcome.book.id;
           case 'conflict':

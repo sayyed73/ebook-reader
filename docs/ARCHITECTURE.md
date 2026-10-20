@@ -72,9 +72,17 @@ capped. The browser build stores the same data in IndexedDB.
 
 ## Library rules
 
-- Adding a file identical to a library book (same SHA-256) opens that book.
-- A different file with the same file name or title asks: **Replace** (keeps id, saved data,
-  position) or **Keep both**.
+A book's identity follows its file, like a desktop PDF reader:
+
+- **Known file location** (desktop path, Android document URI): the same location is the same
+  book; adding it again opens it where the reader left off, and if the file changed the book
+  gets the new content with its progress kept. Any other location is a **new book** with fresh
+  progress, even for an identical copy. Cards show the source folder (`Downloads/guide.html`).
+- **No location** (browser build, iOS, which hands over a temporary copy each time): identical
+  content (same SHA-256) is the same book; a different file with the same file name or title
+  asks **Replace** (keeps id, saved data, position) or **Keep both**.
+- Books stored before locations were recorded are linked to the location the first time the
+  same file is added from it, instead of being duplicated.
 - Metadata updates are serialized read-modify-write by id, so e.g. a position save and a
   "last opened" update can't overwrite each other.
 - Delete removes metadata, HTML and saved data.

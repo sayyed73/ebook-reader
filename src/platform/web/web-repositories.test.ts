@@ -13,6 +13,7 @@ const book: Book = {
   importedAt: 1,
   lastOpenedAt: null,
   position: null,
+  sourceLocation: null,
 };
 
 describe('IndexedDB repositories', () => {

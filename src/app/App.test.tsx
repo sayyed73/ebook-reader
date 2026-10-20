@@ -13,6 +13,7 @@ const book: Book = {
   importedAt: 1,
   lastOpenedAt: 2,
   position: null,
+  sourceLocation: null,
 };
 
 function renderInterrupted() {

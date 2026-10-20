@@ -20,8 +20,9 @@ async function importOk(
   service: LibraryService,
   name: string,
   html: string,
+  location?: string,
 ): Promise<ImportOutcome> {
-  const result = await service.importFile(pickedFile(name, html));
+  const result = await service.importFile(pickedFile(name, html, location));
   if (!result.ok) throw new Error(`import failed: ${result.error.kind}`);
   return result.value;
 }
@@ -40,6 +41,7 @@ describe('LibraryService.importFile', () => {
       importedAt: 1000,
       lastOpenedAt: null,
       position: null,
+      sourceLocation: null,
     });
     expect(book?.contentHash).toMatch(/^[0-9a-f]{64}$/);
     expect(books.contents.get('book-1')).toBe('<title>Guide</title><p>Hi</p>');
@@ -84,6 +86,65 @@ describe('LibraryService.importFile', () => {
       read: () => Promise.reject(new Error('denied')),
     });
     expect(result).toEqual({ ok: false, error: { kind: 'read-failed' } });
+  });
+});
+
+describe('LibraryService.importFile with file locations (desktop, Android)', () => {
+  const DOWNLOADS = '/Users/me/Downloads/guide.html';
+  const DESKTOP = '/Users/me/Desktop/guide.html';
+
+  it('reopens the same file from the same place, keeping progress', async () => {
+    const { books, service } = setup();
+    await importOk(service, 'guide.html', '<title>Guide</title>', DOWNLOADS);
+    await service.savePosition('book-1', { scrollY: 900 });
+
+    const again = await importOk(service, 'guide.html', '<title>Guide</title>', DOWNLOADS);
+
+    expect(again).toMatchObject({ kind: 'already-in-library', book: { id: 'book-1' } });
+    expect(books.books.size).toBe(1);
+  });
+
+  it('treats a copy in another folder as a new book with fresh progress', async () => {
+    const { books, service } = setup();
+    await importOk(service, 'guide.html', '<title>Guide</title>', DOWNLOADS);
+    await service.savePosition('book-1', { scrollY: 900 });
+
+    const copy = await importOk(service, 'guide.html', '<title>Guide</title>', DESKTOP);
+
+    expect(copy).toMatchObject({
+      kind: 'added',
+      book: { id: 'book-2', position: null, sourceLocation: DESKTOP },
+    });
+    expect(books.books.size).toBe(2);
+  });
+
+  it('updates the book when the file at the same place changed, keeping progress', async () => {
+    const { books, bookStorage, service } = setup();
+    await importOk(service, 'guide.html', '<title>Guide</title>v1', DOWNLOADS);
+    await service.savePosition('book-1', { scrollY: 900 });
+    await bookStorage.save('book-1', { done: '1' });
+
+    const updated = await importOk(service, 'guide.html', '<title>Guide</title>v2', DOWNLOADS);
+
+    expect(updated).toMatchObject({
+      kind: 'updated',
+      book: { id: 'book-1', position: { scrollY: 900 } },
+    });
+    expect(books.contents.get('book-1')).toBe('<title>Guide</title>v2');
+    expect(await bookStorage.load('book-1')).toEqual({ done: '1' });
+  });
+
+  it('links a book added before locations were recorded instead of duplicating it', async () => {
+    const { books, service } = setup();
+    await importOk(service, 'guide.html', '<title>Guide</title>');
+
+    const again = await importOk(service, 'guide.html', '<title>Guide</title>', DOWNLOADS);
+
+    expect(again).toMatchObject({
+      kind: 'already-in-library',
+      book: { id: 'book-1', sourceLocation: DOWNLOADS },
+    });
+    expect(books.books.size).toBe(1);
   });
 });
 

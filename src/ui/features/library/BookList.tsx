@@ -1,7 +1,7 @@
 import type { Book, BookId } from '@/core/library/book';
 import { IconButton } from '@/ui/components/IconButton';
 import { BookIcon, TrashIcon } from '@/ui/components/icons';
-import { formatFileSize, formatRelativeTime } from '@/ui/format';
+import { describeSourceFolder, formatFileSize, formatRelativeTime } from '@/ui/format';
 import './BookList.css';
 
 interface BookListProps {
@@ -29,7 +29,7 @@ export function BookList({ books, onOpen, onDelete }: BookListProps) {
               <span className="book-card__title">{book.title}</span>
               <span className="book-card__meta">{describeActivity(book)}</span>
               <span className="book-card__meta">
-                {book.fileName} · {formatFileSize(book.sizeBytes)}
+                {describeFile(book)} · {formatFileSize(book.sizeBytes)}
               </span>
             </span>
           </button>
@@ -45,6 +45,12 @@ export function BookList({ books, onOpen, onDelete }: BookListProps) {
       ))}
     </ul>
   );
+}
+
+/** File name, prefixed with its folder when known so copies from different folders are told apart. */
+function describeFile(book: Book): string {
+  const folder = describeSourceFolder(book.sourceLocation);
+  return folder ? `${folder}/${book.fileName}` : book.fileName;
 }
 
 function describeActivity(book: Book): string {
