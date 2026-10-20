@@ -8,6 +8,11 @@ import type { Book, BookId } from './book';
 export interface PickedFile {
   readonly name: string;
   readonly sizeBytes: number;
+  /**
+   * Stable identifier of where the file lives (desktop path, Android document URI). Absent when
+   * the platform can't provide one (browser file input, iOS temporary copies).
+   */
+  readonly location?: string | undefined;
   read(): Promise<Uint8Array>;
 }
 

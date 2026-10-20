@@ -7,6 +7,9 @@ import type { RecoveryStore } from '@/core/reader/recovery';
  */
 export type PlatformKind = 'web' | 'tauri';
 
+/** May return a promise (e.g. a pending save) for the close to wait on. */
+export type AppClosingListener = () => unknown;
+
 export interface Platform {
   readonly kind: PlatformKind;
   readonly filePicker: FilePicker;
@@ -16,8 +19,9 @@ export interface Platform {
   /** URL of the isolated page that hosts a book (see docs/SECURITY.md). */
   readonly bookFrameUrl: string;
   /**
-   * Calls `listener` when the app is about to close normally. Returns an unsubscribe function.
-   * (A frozen app can't run it, which is how unexpected exits are detected.)
+   * Calls `listener` when the app is about to close normally; where the platform allows it, the
+   * close waits (briefly) for a returned promise, e.g. a pending save. Returns an unsubscribe
+   * function. (A frozen app can't run it, which is how unexpected exits are detected.)
    */
-  onAppClosing(listener: () => void): () => void;
+  onAppClosing(listener: AppClosingListener): () => void;
 }

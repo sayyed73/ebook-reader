@@ -14,6 +14,7 @@ const book: Book = {
   importedAt: 1,
   lastOpenedAt: null,
   position: null,
+  sourceLocation: null,
 };
 
 describe('ReaderScreen', () => {
@@ -36,7 +37,7 @@ describe('ReaderScreen', () => {
     });
 
     // Once the book is open (its frame is shown), leave it.
-    await screen.findByTitle('Sleep Guide');
+    await screen.findByLabelText('Sleep Guide');
     const back = screen.getByRole('button', { name: 'Back to library' });
     await userEvent.click(back);
 
@@ -59,7 +60,7 @@ describe('ReaderScreen', () => {
       platform.books.books.set(book.id, book);
       platform.books.contents.set(book.id, '<p>hi</p>');
     });
-    await screen.findByTitle('Sleep Guide');
+    await screen.findByLabelText('Sleep Guide');
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {
       await userEvent.click(screen.getByRole('button', { name: 'Back to library' }));

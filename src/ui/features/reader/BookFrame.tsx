@@ -23,7 +23,8 @@ export function BookFrame({ title, frameUrl, ...frameOptions }: BookFrameProps) 
     <iframe
       ref={iframeRef}
       className="book-frame"
-      title={title}
+      // aria-label rather than title: a title attribute shows as a hover tooltip over the book.
+      aria-label={title}
       src={frameUrl}
       sandbox={BOOK_FRAME_SANDBOX}
       referrerPolicy="no-referrer"

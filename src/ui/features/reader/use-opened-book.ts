@@ -42,27 +42,28 @@ export function useOpenedBook(bookId: BookId, onSaveError: () => void): OpenedBo
   }, [reader, bookId]);
 
   const storage = state.status === 'open' ? state.opened.storage : null;
-  useFlushOnExit(storage ? () => void storage.flush() : null);
+  useFlushOnExit(storage ? () => storage.flush() : null);
 
   return state;
 }
 
 /**
  * Runs `flush` when the app goes to the background (mobile may then kill it without warning),
- * when the page is closed, and when the component unmounts.
+ * when the app closes (the desktop window waits for it), and when the component unmounts.
  */
-export function useFlushOnExit(flush: (() => unknown) | null): void {
+export function useFlushOnExit(flush: (() => Promise<unknown>) | null): void {
+  const { platform } = useServices();
   useEffect(() => {
     if (!flush) return;
     const flushIfHidden = () => {
-      if (document.visibilityState === 'hidden') flush();
+      if (document.visibilityState === 'hidden') void flush();
     };
     document.addEventListener('visibilitychange', flushIfHidden);
-    window.addEventListener('pagehide', flush);
+    const stopOnClosing = platform.onAppClosing(flush);
     return () => {
       document.removeEventListener('visibilitychange', flushIfHidden);
-      window.removeEventListener('pagehide', flush);
-      flush();
+      stopOnClosing();
+      void flush();
     };
-  }, [flush]);
+  }, [flush, platform]);
 }

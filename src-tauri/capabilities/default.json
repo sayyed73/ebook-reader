@@ -1,10 +1,11 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Main window permissions: core defaults plus the app's own library and picker commands (src-tauri/src). No plugin (fs, dialog) permissions are granted to the UI; those plugins are used from Rust only.",
+  "description": "Main window permissions: core defaults, window destroy (needed so the app can finish saving the open book before the window closes; see src/platform/tauri/tauri-platform.ts), and the app's own library and picker commands (src-tauri/src). No plugin (fs, dialog) permissions are granted to the UI; those plugins are used from Rust only.",
   "windows": ["main"],
   "permissions": [
     "core:default",
+    "core:window:allow-destroy",
     "allow-library-list",
     "allow-library-get",
     "allow-library-get-content",

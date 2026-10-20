@@ -78,9 +78,13 @@ export class InMemoryRecoveryStore implements RecoveryStore {
   }
 }
 
-export function pickedFile(name: string, content: string | Uint8Array): PickedFile {
+export function pickedFile(
+  name: string,
+  content: string | Uint8Array,
+  location?: string,
+): PickedFile {
   const bytes = typeof content === 'string' ? new TextEncoder().encode(content) : content;
-  return { name, sizeBytes: bytes.length, read: () => Promise.resolve(bytes) };
+  return { name, sizeBytes: bytes.length, location, read: () => Promise.resolve(bytes) };
 }
 
 export function createTestPlatform(): Platform & {

@@ -1,4 +1,4 @@
-import type { Platform } from '../platform';
+import type { AppClosingListener, Platform } from '../platform';
 import { openDatabase } from './indexed-db';
 import { LocalRecoveryStore } from './local-recovery-store';
 import { WebBookRepository } from './web-book-repository';
@@ -19,9 +19,13 @@ export function createWebPlatform(): Platform {
   };
 }
 
-export function onPageHide(listener: () => void): () => void {
-  window.addEventListener('pagehide', listener);
+/** Browsers can't delay closing a page, so async work started here is best effort. */
+export function onPageHide(listener: AppClosingListener): () => void {
+  const handle = () => {
+    void listener();
+  };
+  window.addEventListener('pagehide', handle);
   return () => {
-    window.removeEventListener('pagehide', listener);
+    window.removeEventListener('pagehide', handle);
   };
 }

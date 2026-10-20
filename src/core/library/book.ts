@@ -16,13 +16,17 @@ export interface Book {
   readonly importedAt: number;
   readonly lastOpenedAt: number | null;
   readonly position: ReadingPosition | null;
+  /** Where the file was added from, when the platform reports it (see PickedFile.location). */
+  readonly sourceLocation: string | null;
 }
 
 /**
  * Normalizes a stored record: fills fields added after it was first stored and drops fields that
  * no longer exist, so older records stay readable.
  */
-export function withBookDefaults(stored: Omit<Book, 'position'> & Partial<Book>): Book {
+export function withBookDefaults(
+  stored: Omit<Book, 'position' | 'sourceLocation'> & Partial<Book>,
+): Book {
   return {
     id: stored.id,
     title: stored.title,
@@ -32,6 +36,7 @@ export function withBookDefaults(stored: Omit<Book, 'position'> & Partial<Book>)
     importedAt: stored.importedAt,
     lastOpenedAt: stored.lastOpenedAt,
     position: stored.position ?? null,
+    sourceLocation: stored.sourceLocation ?? null,
   };
 }
 

@@ -1,3 +1,13 @@
+/**
+ * Short, human-readable source of a book: the folder its file was added from ("Downloads"),
+ * or null when the location isn't a file path (e.g. an Android content URI) or is unknown.
+ */
+export function describeSourceFolder(location: string | null): string | null {
+  if (!location || /^[a-z][a-z0-9+.-]*:\/\//i.test(location)) return null;
+  const parts = location.split(/[\\/]/).filter(Boolean);
+  return parts.length >= 2 ? (parts[parts.length - 2] ?? null) : null;
+}
+
 export function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
